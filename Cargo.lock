@@ -163,6 +163,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "backforge-migrations"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "backforge-core",
+ "backforge-db",
+ "chrono",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
