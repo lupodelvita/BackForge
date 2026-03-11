@@ -1,0 +1,7 @@
+/target
+*.pdb
+.env
+.env.*
+!.env.example
+/docs
+/tests
