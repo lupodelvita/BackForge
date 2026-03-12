@@ -49,6 +49,8 @@ services:
       # Кэш Go модулей
       - dev_gomod:/go/pkg/mod
       - dev_gocache:/root/.cache/go-build
+      - dev_node_modules:/workspace/apps/builder/node_modules
+      - dev_npm_cache:/root/.npm
     environment:
       DATABASE_URL: postgresql://backforge:backforge@postgres:5432/backforge
       REDIS_URL: redis://redis:6379
@@ -76,3 +78,5 @@ volumes:
   dev_target:
   dev_gomod:
   dev_gocache:
+  dev_node_modules:
+  dev_npm_cache:
