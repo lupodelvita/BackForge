@@ -26,6 +26,14 @@ ENV PATH="${GOPATH}/bin:${PATH}"
 ENV CARGO_HOME="/cargo"
 ENV PATH="${CARGO_HOME}/bin:${PATH}"
 
+# Python 3
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-venv \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf python3 /usr/bin/python
+
 WORKDIR /workspace
 
 # Команда по умолчанию — держать контейнер живым
