@@ -3,3 +3,4 @@ pub mod project;
 pub mod storage;
 pub mod deploy;
 pub mod sync;
+pub mod generate;

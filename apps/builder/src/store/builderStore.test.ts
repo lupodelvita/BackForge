@@ -4,8 +4,10 @@ import type { ProjectState } from '@/types/schema'
 
 const sampleProject: ProjectState = {
   meta: {
+    id: 'meta-001',
     name: 'test-project',
-    version: '0.1.0',
+    description: null,
+    version: 1,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   },
@@ -16,7 +18,7 @@ const sampleProject: ProjectState = {
         name: 'users',
         fields: [
           { id: 'f-001', name: 'id', field_type: 'uuid', nullable: false, unique: false, primary_key: true, default_value: null },
-          { id: 'f-002', name: 'email', field_type: 'varchar', nullable: false, unique: true, primary_key: false, default_value: null },
+          { id: 'f-002', name: 'email', field_type: 'text', nullable: false, unique: true, primary_key: false, default_value: null },
         ],
         indexes: [],
       },
@@ -84,7 +86,7 @@ describe('useBuilderStore', () => {
     useBuilderStore.getState().setProject(sampleProject)
     useBuilderStore.getState().addField('tbl-001', {
       name: 'name',
-      field_type: 'varchar',
+      field_type: 'text',
       nullable: true,
       unique: false,
       primary_key: false,

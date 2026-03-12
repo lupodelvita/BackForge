@@ -1,7 +1,10 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { ProjectState, Table, Field, BuilderNode, NodePosition } from '@/types/schema'
-import { nanoid } from './utils'
+
+function nanoid(): string {
+  return Math.random().toString(36).slice(2, 11) + Date.now().toString(36)
+}
 
 interface BuilderState {
   project: ProjectState | null

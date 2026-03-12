@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useBuilderStore } from '@/store'
-import TableNode, { type TableNodeData } from '@/components/nodes/TableNode'
+import TableNode, { type TableNodeType } from '@/components/nodes/TableNode'
 
 const nodeTypes: NodeTypes = {
   table: TableNode as unknown as NodeTypes['table'],
@@ -21,13 +21,13 @@ export default function BuilderCanvas() {
   const { project, nodes: builderNodes, selectedNodeId, setNodePosition, selectNode } = useBuilderStore()
 
   // Преобразуем BuilderNode[] в формат ReactFlow Node[]
-  const rfNodes: Node<TableNodeData>[] = useMemo(() => {
+  const rfNodes: TableNodeType[] = useMemo(() => {
     if (!project) return []
     return builderNodes.map((bn) => {
       const table = project.schema.tables.find((t) => t.id === bn.id)
       return {
         id: bn.id,
-        type: 'table',
+        type: 'table' as const,
         position: bn.position,
         selected: bn.id === selectedNodeId,
         data: { table: table! },

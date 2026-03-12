@@ -3,9 +3,8 @@ import type { FieldType } from '@/types/schema'
 import { useBuilderStore } from '@/store'
 
 const FIELD_TYPES: FieldType[] = [
-  'uuid', 'integer', 'bigint', 'smallint', 'float', 'double',
-  'boolean', 'text', 'varchar', 'char', 'json', 'jsonb',
-  'timestamp', 'date', 'time', 'bytea', 'serial', 'bigserial',
+  'uuid', 'integer', 'big_int', 'float', 'boolean',
+  'text', 'json', 'timestamp', 'bytes',
 ]
 
 const panelStyle: React.CSSProperties = {

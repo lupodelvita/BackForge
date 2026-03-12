@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBuilderStore, useProjectApi } from '@/store'
+import { nanoid } from '@/store/utils'
 import BuilderCanvas from '@/components/canvas/BuilderCanvas'
 import TablePanel from '@/components/panels/TablePanel'
 
@@ -57,7 +58,7 @@ export default function App() {
     // Init empty project if needed
     if (!project) {
       useBuilderStore.getState().setProject({
-        meta: { name: 'untitled', version: '0.1.0', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        meta: { id: nanoid(), name: 'untitled', description: null, version: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
         schema: { tables: [] },
       })
     }

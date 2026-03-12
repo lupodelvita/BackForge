@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react'
 import clsx from 'clsx'
 import type { Table } from '@/types/schema'
 import { useBuilderStore } from '@/store'
@@ -8,17 +8,19 @@ export type TableNodeData = {
   table: Table
 }
 
-function TableNode({ id, data, selected }: NodeProps<TableNodeData>) {
+export type TableNodeType = Node<TableNodeData, 'table'>
+
+function TableNode({ id, data, selected }: NodeProps<TableNodeType>) {
   const selectNode = useBuilderStore((s) => s.selectNode)
-  const { table } = data
+  const { table } = data as TableNodeData
 
   return (
     <div
       className={clsx(
         'table-node',
-        selected && 'table-node--selected'
+        (selected as boolean) && 'table-node--selected'
       )}
-      onClick={() => selectNode(id)}
+      onClick={() => selectNode(id as string)}
       style={{
         minWidth: 220,
         background: '#1e1e2e',
@@ -50,7 +52,7 @@ function TableNode({ id, data, selected }: NodeProps<TableNodeData>) {
 
       {/* Fields */}
       <div style={{ padding: '4px 0 8px' }}>
-        {table.fields.map((field) => (
+        {(table as Table).fields.map((field) => (
           <div
             key={field.id}
             style={{

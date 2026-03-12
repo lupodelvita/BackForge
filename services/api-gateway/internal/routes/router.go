@@ -44,6 +44,10 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 		// Sync proxy routes → forwarded to services/sync-server (port 8083)
 		r.HandleFunc("/sync/*", handlers.SyncProxy)
 		r.HandleFunc("/sync", handlers.SyncProxy)
+
+		// Codegen proxy routes → forwarded to services/code-generator (port 8084)
+		r.HandleFunc("/generate/*", handlers.CodegenProxy)
+		r.HandleFunc("/generate", handlers.CodegenProxy)
 	})
 
 	return r

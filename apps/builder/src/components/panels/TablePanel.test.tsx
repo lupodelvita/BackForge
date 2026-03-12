@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { useBuilderStore } from '@/store/builderStore'
 import TablePanel from '@/components/panels/TablePanel'
@@ -11,7 +11,7 @@ vi.mock('@xyflow/react', () => ({
 }))
 
 const sampleProject: ProjectState = {
-  meta: { name: 'proj', version: '0.1.0', created_at: '', updated_at: '' },
+  meta: { id: 'meta-1', name: 'proj', description: null, version: 1, created_at: '', updated_at: '' },
   schema: {
     tables: [
       {
@@ -19,7 +19,7 @@ const sampleProject: ProjectState = {
         name: 'users',
         fields: [
           { id: 'f-1', name: 'id', field_type: 'uuid', nullable: false, unique: false, primary_key: true, default_value: null },
-          { id: 'f-2', name: 'email', field_type: 'varchar', nullable: false, unique: true, primary_key: false, default_value: null },
+          { id: 'f-2', name: 'email', field_type: 'text', nullable: false, unique: true, primary_key: false, default_value: null },
         ],
         indexes: [],
       },

@@ -34,6 +34,11 @@ enum Commands {
         #[command(subcommand)]
         action: SyncAction,
     },
+    /// Генерация кода из project_state (SQL, Go handlers, OpenAPI)
+    Generate {
+        #[command(subcommand)]
+        action: GenerateAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -80,6 +85,18 @@ enum SyncAction {
     Status { project: String },
     /// История синхронизаций проекта
     History { project: String },
+}
+
+#[derive(Subcommand)]
+enum GenerateAction {
+    /// Генерировать PostgreSQL DDL миграции
+    Sql { project: String },
+    /// Генерировать Go CRUD-обработчики
+    Handlers { project: String },
+    /// Генерировать OpenAPI 3.0 спецификацию
+    Openapi { project: String },
+    /// Генерировать всё (SQL + handlers + OpenAPI)
+    All { project: String },
 }
 
 #[derive(Subcommand)]
@@ -180,6 +197,20 @@ async fn main() -> Result<()> {
             }
             SyncAction::History { project } => {
                 commands::sync::cmd_sync_history(project).await?;
+            }
+        },
+        Commands::Generate { action } => match action {
+            GenerateAction::Sql { project } => {
+                commands::generate::cmd_generate_sql(project).await?;
+            }
+            GenerateAction::Handlers { project } => {
+                commands::generate::cmd_generate_handlers(project).await?;
+            }
+            GenerateAction::Openapi { project } => {
+                commands::generate::cmd_generate_openapi(project).await?;
+            }
+            GenerateAction::All { project } => {
+                commands::generate::cmd_generate_all(project).await?;
             }
         },
     }
