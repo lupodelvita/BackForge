@@ -24,41 +24,29 @@ enum Commands {
         #[command(subcommand)]
         action: StorageAction,
     },
+    /// Деплой проекта в Docker или облако
+    Deploy {
+        #[command(subcommand)]
+        action: DeployAction,
+    },
 }
 
 #[derive(Subcommand)]
 enum ProjectAction {
-    /// Создать новый проект
     Create {
         name: String,
         #[arg(short, long, default_value = "")]
         description: String,
     },
-    /// Список всех проектов
     List,
-    /// Информация о проекте
-    Info {
-        name: String,
-    },
+    Info { name: String },
 }
 
 #[derive(Subcommand)]
 enum StorageAction {
-    /// Создать bucket
-    BucketCreate {
-        project: String,
-        bucket: String,
-    },
-    /// Список bucket'ов проекта
-    BucketList {
-        project: String,
-    },
-    /// Удалить bucket
-    BucketDelete {
-        project: String,
-        bucket: String,
-    },
-    /// Загрузить файл в хранилище
+    BucketCreate { project: String, bucket: String },
+    BucketList { project: String },
+    BucketDelete { project: String, bucket: String },
     Upload {
         project: String,
         bucket: String,
@@ -67,24 +55,37 @@ enum StorageAction {
         #[arg(short, long)]
         content_type: Option<String>,
     },
-    /// Скачать объект из хранилища
     Download {
         project: String,
         bucket: String,
         key: String,
         output: PathBuf,
     },
-    /// Список объектов в bucket'е
-    List {
+    List { project: String, bucket: String },
+    Delete { project: String, bucket: String, key: String },
+}
+
+#[derive(Subcommand)]
+enum DeployAction {
+    /// Деплой проекта (по умолчанию: local Docker)
+    Run {
+        /// Имя проекта
         project: String,
-        bucket: String,
+        /// Целевая платформа: local | cloud | edge
+        #[arg(short, long, default_value = "local")]
+        target: String,
+        /// Порт на котором будет доступен backend
+        #[arg(short, long, default_value_t = 3000)]
+        port: u16,
     },
-    /// Удалить объект
-    Delete {
-        project: String,
-        bucket: String,
-        key: String,
-    },
+    /// Список активных деплойментов
+    List,
+    /// Статус конкретного деплоймента
+    Status { id: String },
+    /// Остановить деплоймент
+    Stop { id: String },
+    /// Показать сгенерированный Dockerfile
+    Dockerfile { id: String },
 }
 
 #[tokio::main]
@@ -131,6 +132,23 @@ async fn main() -> Result<()> {
             }
             StorageAction::Delete { project, bucket, key } => {
                 commands::storage::cmd_delete(project, bucket, key).await?;
+            }
+        },
+        Commands::Deploy { action } => match action {
+            DeployAction::Run { project, target, port } => {
+                commands::deploy::cmd_deploy(project, target, port).await?;
+            }
+            DeployAction::List => {
+                commands::deploy::cmd_deploy_list().await?;
+            }
+            DeployAction::Status { id } => {
+                commands::deploy::cmd_deploy_status(id).await?;
+            }
+            DeployAction::Stop { id } => {
+                commands::deploy::cmd_deploy_stop(id).await?;
+            }
+            DeployAction::Dockerfile { id } => {
+                commands::deploy::cmd_deploy_dockerfile(id).await?;
             }
         },
     }

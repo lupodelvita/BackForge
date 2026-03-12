@@ -36,6 +36,10 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 		r.Put("/storage/{project}/{bucket}/{key}", handlers.StorageUpload)
 		r.Get("/storage/{project}/{bucket}/{key}", handlers.StorageDownload)
 		r.Delete("/storage/{project}/{bucket}/{key}", handlers.StorageDeleteObject)
+
+		// Deployment proxy routes → forwarded to services/deployment (port 8082)
+		r.HandleFunc("/deploy/*", handlers.DeployProxy)
+		r.HandleFunc("/deploy", handlers.DeployProxy)
 	})
 
 	return r
