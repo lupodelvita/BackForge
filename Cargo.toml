@@ -4,6 +4,7 @@ members = [
     "crates/backforge-db",
     "crates/backforge-cli",
     "crates/backforge-migrations",
+    "crates/backforge-storage",
 ]
 resolver = "2"
 
@@ -20,3 +21,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "5"
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
 redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
+sha2 = "0.10"
+hex = "0.4"
+bytes = "1"
+tokio-util = { version = "0.7", features = ["io", "codec"] }

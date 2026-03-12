@@ -27,6 +27,15 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTAuth(jwtSecret))
 		// Динамические API routes из project_state.json — Phase 2.5
+
+		// Storage routes
+		r.Get("/storage/{project}", handlers.StorageListBuckets)
+		r.Put("/storage/{project}/{bucket}", handlers.StorageCreateBucket)
+		r.Delete("/storage/{project}/{bucket}", handlers.StorageDeleteBucket)
+		r.Get("/storage/{project}/{bucket}", handlers.StorageListObjects)
+		r.Put("/storage/{project}/{bucket}/{key}", handlers.StorageUpload)
+		r.Get("/storage/{project}/{bucket}/{key}", handlers.StorageDownload)
+		r.Delete("/storage/{project}/{bucket}/{key}", handlers.StorageDeleteObject)
 	})
 
 	return r

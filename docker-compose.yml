@@ -51,6 +51,7 @@ services:
       - dev_gocache:/root/.cache/go-build
       - dev_node_modules:/workspace/apps/builder/node_modules
       - dev_npm_cache:/root/.npm
+      - dev_storage:/workspace/storage
     environment:
       DATABASE_URL: postgresql://backforge:backforge@postgres:5432/backforge
       REDIS_URL: redis://redis:6379
@@ -59,8 +60,11 @@ services:
       RUST_LOG: "info"
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: mistral
+      BACKFORGE_STORAGE_ROOT: /workspace/storage
     ports:
       - "8080:8080"
+      - "8081:8081"
+      - "5173:5173"
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,3 +84,4 @@ volumes:
   dev_gocache:
   dev_node_modules:
   dev_npm_cache:
+  dev_storage:
