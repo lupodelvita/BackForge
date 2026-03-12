@@ -1,6 +1,5 @@
-version: "3.9"
-
 services:
+  # ─── Infrastructure ──────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: backforge-postgres
@@ -31,6 +30,47 @@ services:
       timeout: 3s
       retries: 5
 
+  # ─── Dev environment ────────────────────────────────────────────
+  # Rust + Go запускаются здесь. Исходники монтируются напрямую,
+  # артефакты сборки — в именованных volumes (не хламят PC).
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: backforge-dev
+    volumes:
+      # Исходники (редактируешь на хосте, изменения сразу видны в контейнере)
+      - .:/workspace
+      # Кэш Cargo — не компилить всё с нуля при каждом рестарте
+      - dev_cargo_registry:/cargo/registry
+      - dev_cargo_git:/cargo/git
+      # Артефакты сборки Rust
+      - dev_target:/workspace/target
+      # Кэш Go модулей
+      - dev_gomod:/go/pkg/mod
+      - dev_gocache:/root/.cache/go-build
+    environment:
+      DATABASE_URL: postgresql://backforge:backforge@postgres:5432/backforge
+      REDIS_URL: redis://redis:6379
+      API_GATEWAY_PORT: "8080"
+      JWT_SECRET: dev-secret-change-in-production
+      RUST_LOG: "info"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+
 volumes:
   postgres_data:
   redis_data:
+  dev_cargo_registry:
+  dev_cargo_git:
+  dev_target:
+  dev_gomod:
+  dev_gocache:
