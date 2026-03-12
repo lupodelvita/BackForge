@@ -29,6 +29,11 @@ enum Commands {
         #[command(subcommand)]
         action: DeployAction,
     },
+    /// Синхронизация проекта с удалённым сервером
+    Sync {
+        #[command(subcommand)]
+        action: SyncAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -63,6 +68,18 @@ enum StorageAction {
     },
     List { project: String, bucket: String },
     Delete { project: String, bucket: String, key: String },
+}
+
+#[derive(Subcommand)]
+enum SyncAction {
+    /// Отправить локальный снимок на sync-сервер
+    Push { project: String },
+    /// Получить последний снимок с sync-сервера
+    Pull { project: String },
+    /// Показать состояние синхронизации проекта
+    Status { project: String },
+    /// История синхронизаций проекта
+    History { project: String },
 }
 
 #[derive(Subcommand)]
@@ -149,6 +166,20 @@ async fn main() -> Result<()> {
             }
             DeployAction::Dockerfile { id } => {
                 commands::deploy::cmd_deploy_dockerfile(id).await?;
+            }
+        },
+        Commands::Sync { action } => match action {
+            SyncAction::Push { project } => {
+                commands::sync::cmd_sync_push(project).await?;
+            }
+            SyncAction::Pull { project } => {
+                commands::sync::cmd_sync_pull(project).await?;
+            }
+            SyncAction::Status { project } => {
+                commands::sync::cmd_sync_status(project).await?;
+            }
+            SyncAction::History { project } => {
+                commands::sync::cmd_sync_history(project).await?;
             }
         },
     }

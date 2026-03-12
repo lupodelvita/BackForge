@@ -40,6 +40,10 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 		// Deployment proxy routes → forwarded to services/deployment (port 8082)
 		r.HandleFunc("/deploy/*", handlers.DeployProxy)
 		r.HandleFunc("/deploy", handlers.DeployProxy)
+
+		// Sync proxy routes → forwarded to services/sync-server (port 8083)
+		r.HandleFunc("/sync/*", handlers.SyncProxy)
+		r.HandleFunc("/sync", handlers.SyncProxy)
 	})
 
 	return r

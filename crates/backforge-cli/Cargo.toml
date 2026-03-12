@@ -19,4 +19,7 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 dirs = { workspace = true }
+sha2 = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
 clap = { version = "4", features = ["derive"] }
