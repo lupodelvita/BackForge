@@ -54,6 +54,11 @@ enum Commands {
         #[command(subcommand)]
         action: SecurityAction,
     },
+    /// Миграции БД: генерация, применение, статус, откат
+    Migrate {
+        #[command(subcommand)]
+        action: MigrateAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -148,6 +153,26 @@ enum SecurityAction {
     },
     /// Число записей в audit log
     AuditCount { project: String },
+}
+
+#[derive(Subcommand)]
+enum MigrateAction {
+    /// Сгенерировать SQL-миграцию из диффа схем (offline, БД не нужна)
+    Generate {
+        project: String,
+        /// Описание миграции (e.g. "add_users_table")
+        #[arg(short, long, default_value = "migration")]
+        description: String,
+        /// Сравнивать с указанной версией project_schema (default: последняя версия)
+        #[arg(long)]
+        from_version: Option<u32>,
+    },
+    /// Применить все ожидающие миграции (требует DATABASE_URL)
+    Run { project: String },
+    /// Показать применённые / ожидающие миграции (требует DATABASE_URL)
+    Status { project: String },
+    /// Убрать последнюю миграцию из таблицы отслеживания (требует DATABASE_URL)
+    Rollback { project: String },
 }
 
 #[derive(Subcommand)]
@@ -319,6 +344,20 @@ async fn main() -> Result<()> {
             }
             SecurityAction::AuditCount { project } => {
                 commands::security::cmd_audit_count(project)?;
+            }
+        },
+        Commands::Migrate { action } => match action {
+            MigrateAction::Generate { project, description, from_version } => {
+                commands::migrate::cmd_generate(project, description, from_version)?;
+            }
+            MigrateAction::Run { project } => {
+                commands::migrate::cmd_run(project).await?;
+            }
+            MigrateAction::Status { project } => {
+                commands::migrate::cmd_status(project).await?;
+            }
+            MigrateAction::Rollback { project } => {
+                commands::migrate::cmd_rollback(project).await?;
             }
         },
     }

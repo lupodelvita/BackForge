@@ -4,4 +4,5 @@ pub mod generator;
 pub mod runner;
 
 pub use error::{MigrationError, MigrationResult};
-pub use runner::MigrationRunner;
+pub use generator::generate_migration_file;
+pub use runner::{MigrationRunner, MigrationStatusEntry};

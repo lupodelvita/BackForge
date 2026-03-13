@@ -1,6 +1,7 @@
-use crate::diff::{FieldDiff, SchemaDiff};
-use backforge_core::project::schema::FieldType;
+use crate::diff::{compute_diff, FieldDiff, SchemaDiff};
+use backforge_core::project::schema::{FieldType, ProjectSchema};
 use chrono::Utc;
+use std::path::{Path, PathBuf};
 
 /// Конвертировать FieldType в PostgreSQL тип
 pub fn field_type_to_sql(ft: &FieldType) -> &'static str {
@@ -139,6 +140,41 @@ pub fn generate_migration_sql(diffs: &[SchemaDiff], description: &str) -> String
     )
 }
 
+/// Сгенерировать файл миграции без подключения к БД (offline).
+/// Сравнивает old_schema и new_schema, пишет .sql файл в `migrations_dir`.
+/// Возвращает `None` если изменений нет.
+pub fn generate_migration_file(
+    old_schema: &ProjectSchema,
+    new_schema: &ProjectSchema,
+    description: &str,
+    migrations_dir: impl AsRef<Path>,
+) -> crate::MigrationResult<Option<PathBuf>> {
+    let diffs = compute_diff(old_schema, new_schema);
+    if diffs.is_empty() {
+        return Ok(None);
+    }
+    let dir = migrations_dir.as_ref();
+    let step = count_existing_migrations(dir)?;
+    let filename = migration_filename(step, description);
+    let sql = generate_migration_sql(&diffs, description);
+    std::fs::create_dir_all(dir).map_err(|e| crate::MigrationError::Failed { reason: e.to_string() })?;
+    let path = dir.join(&filename);
+    std::fs::write(&path, sql).map_err(|e| crate::MigrationError::Failed { reason: e.to_string() })?;
+    Ok(Some(path))
+}
+
+pub(crate) fn count_existing_migrations(dir: &Path) -> crate::MigrationResult<u32> {
+    if !dir.exists() {
+        return Ok(1);
+    }
+    let count = std::fs::read_dir(dir)
+        .map_err(|e| crate::MigrationError::Failed { reason: e.to_string() })?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map(|x| x == "sql").unwrap_or(false))
+        .count();
+    Ok(count as u32 + 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,5 +221,96 @@ mod tests {
         };
         let sql = diff_to_sql(&diff);
         assert!(sql.contains("ALTER TABLE \"users\" ADD COLUMN IF NOT EXISTS \"avatar_url\" TEXT"));
+    }
+
+    #[test]
+    fn test_generate_migration_file_creates_sql() {
+        use backforge_core::project::schema::{Field, FieldType, ProjectSchema, Table};
+        use tempfile::tempdir;
+        use uuid::Uuid;
+
+        let dir = tempdir().unwrap();
+
+        let old = ProjectSchema::default();
+        let mut new = ProjectSchema::default();
+        new.tables.push(Table {
+            id: Uuid::new_v4(),
+            name: "orders".to_string(),
+            fields: vec![Field {
+                id: Uuid::new_v4(),
+                name: "id".to_string(),
+                field_type: FieldType::Uuid,
+                nullable: false,
+                primary_key: true,
+                unique: false,
+                default_value: None,
+            }],
+            indexes: vec![],
+        });
+
+        let path = generate_migration_file(&old, &new, "add_orders", dir.path())
+            .unwrap()
+            .expect("should generate a file");
+
+        assert!(path.exists());
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("CREATE TABLE IF NOT EXISTS \"orders\""));
+        assert!(content.contains("-- BackForge Migration: add_orders"));
+    }
+
+    #[test]
+    fn test_generate_migration_file_no_changes_returns_none() {
+        use backforge_core::project::schema::ProjectSchema;
+        use tempfile::tempdir;
+
+        let dir = tempdir().unwrap();
+        let schema = ProjectSchema::default();
+
+        let result = generate_migration_file(&schema, &schema, "noop", dir.path()).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_generate_migration_file_step_increments() {
+        use backforge_core::project::schema::{Field, FieldType, ProjectSchema, Table};
+        use tempfile::tempdir;
+        use uuid::Uuid;
+
+        let dir = tempdir().unwrap();
+
+        let make_schema = |name: &str| {
+            let mut s = ProjectSchema::default();
+            s.tables.push(Table {
+                id: Uuid::new_v4(),
+                name: name.to_string(),
+                fields: vec![Field {
+                    id: Uuid::new_v4(),
+                    name: "id".to_string(),
+                    field_type: FieldType::Integer,
+                    nullable: false,
+                    primary_key: true,
+                    unique: false,
+                    default_value: None,
+                }],
+                indexes: vec![],
+            });
+            s
+        };
+
+        let empty = ProjectSchema::default();
+        let s1 = make_schema("alpha");
+        let s2 = make_schema("beta");
+
+        let p1 = generate_migration_file(&empty, &s1, "first", dir.path())
+            .unwrap()
+            .unwrap();
+        let p2 = generate_migration_file(&s1, &s2, "second", dir.path())
+            .unwrap()
+            .unwrap();
+
+        let n1 = p1.file_name().unwrap().to_string_lossy();
+        let n2 = p2.file_name().unwrap().to_string_lossy();
+        assert!(n1.starts_with("001_"), "got: {}", n1);
+        assert!(n2.starts_with("002_"), "got: {}", n2);
     }
 }

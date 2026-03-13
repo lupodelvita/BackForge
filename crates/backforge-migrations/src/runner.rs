@@ -1,9 +1,18 @@
 use crate::diff::compute_diff;
-use crate::generator::{generate_migration_sql, migration_filename};
+use crate::generator::{count_existing_migrations, generate_migration_sql, migration_filename};
 use crate::{MigrationError, MigrationResult};
 use backforge_core::project::schema::ProjectSchema;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use std::path::PathBuf;
+
+/// Состояние одной миграции (применена / ожидает)
+#[derive(Debug)]
+pub struct MigrationStatusEntry {
+    pub filename: String,
+    pub applied: bool,
+    pub applied_at: Option<DateTime<Utc>>,
+}
 
 pub struct MigrationRunner {
     pub pool: PgPool,
@@ -114,21 +123,67 @@ impl MigrationRunner {
     }
 
     fn next_step_number(&self) -> MigrationResult<u32> {
-        if !self.migrations_dir.exists() {
-            return Ok(1);
-        }
-        let count = std::fs::read_dir(&self.migrations_dir)
-            .map_err(|e| MigrationError::Failed {
-                reason: e.to_string(),
-            })?
-            .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .map(|ext| ext == "sql")
-                    .unwrap_or(false)
+        count_existing_migrations(&self.migrations_dir)
+    }
+
+    /// Список всех миграций (применённые + ожидающие).
+    pub async fn status(&self) -> MigrationResult<Vec<MigrationStatusEntry>> {
+        self.init().await?;
+
+        let rows: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
+            "SELECT filename, applied_at FROM _backforge_migrations ORDER BY id",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let applied_map: std::collections::HashMap<String, DateTime<Utc>> =
+            rows.into_iter().collect();
+
+        let mut files: Vec<std::path::PathBuf> = if self.migrations_dir.exists() {
+            std::fs::read_dir(&self.migrations_dir)
+                .map_err(|e| MigrationError::Failed { reason: e.to_string() })?
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| p.extension().map(|e| e == "sql").unwrap_or(false))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        files.sort();
+
+        let entries = files
+            .into_iter()
+            .map(|p| {
+                let filename = p.file_name().unwrap().to_string_lossy().into_owned();
+                let applied_at = applied_map.get(&filename).copied();
+                MigrationStatusEntry {
+                    applied: applied_at.is_some(),
+                    applied_at,
+                    filename,
+                }
             })
-            .count();
-        Ok(count as u32 + 1)
+            .collect();
+
+        Ok(entries)
+    }
+
+    /// Убрать последнюю применённую миграцию из таблицы отслеживания.
+    /// SQL-изменения **не откатываются** — пользователь должен написать
+    /// обратный SQL вручную (или использовать pg_dump snapshot).
+    pub async fn undo_last(&self) -> MigrationResult<Option<String>> {
+        self.init().await?;
+        let last: Option<String> = sqlx::query_scalar(
+            "SELECT filename FROM _backforge_migrations ORDER BY id DESC LIMIT 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(ref filename) = last {
+            sqlx::query("DELETE FROM _backforge_migrations WHERE filename = $1")
+                .bind(filename)
+                .execute(&self.pool)
+                .await?;
+        }
+        Ok(last)
     }
 }
