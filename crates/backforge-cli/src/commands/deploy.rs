@@ -143,6 +143,7 @@ pub async fn cmd_deploy_dockerfile(id: String) -> Result<()> {
 }
 
 /// Return the path to a project's directory (for validation in tests).
+#[allow(dead_code)]
 pub fn project_path(project: &str) -> PathBuf {
     crate::commands::project::projects_dir().join(project)
 }

@@ -1,3 +1,4 @@
+use backforge_audit::AuditAction;
 use backforge_core::{CoreResult, ProjectManager};
 use std::path::PathBuf;
 
@@ -13,6 +14,7 @@ pub fn cmd_create(name: String, description: String) -> CoreResult<()> {
     let state = manager.create_project(&name, &description)?;
     println!("✓ Project '{}' created (id: {})", state.meta.name, state.meta.id);
     println!("  Path: {:?}", projects_dir().join(&name));
+    crate::commands::security::audit_write(&name, "cli", AuditAction::ProjectCreated);
     Ok(())
 }
 

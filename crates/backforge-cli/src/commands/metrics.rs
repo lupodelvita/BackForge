@@ -9,6 +9,7 @@ fn metrics_url() -> String {
 
 #[derive(Debug, Deserialize)]
 struct RouteStats {
+    #[allow(dead_code)]
     project: String,
     method: String,
     route: String,
@@ -34,6 +35,7 @@ struct AllResponse {
 
 #[derive(Debug, Deserialize)]
 struct ProjectResponse {
+    #[allow(dead_code)]
     project: String,
     stats: Vec<RouteStats>,
 }
