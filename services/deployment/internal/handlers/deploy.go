@@ -15,10 +15,10 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// DeploymentHandler wires together store, deployer, and project lookup.
+// DeploymentHandler wires together store, deployer registry, and project lookup.
 type DeploymentHandler struct {
 	Store        *store.Store
-	Deployer     deploy.Deployer
+	Deployers    map[string]deploy.Deployer // target → Deployer
 	ProjectsRoot string
 }
 
@@ -57,6 +57,13 @@ func (h *DeploymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Target != "local" && req.Target != "cloud" && req.Target != "edge" {
 		writeError(w, http.StatusBadRequest, "target must be 'local', 'cloud', or 'edge'")
+		return
+	}
+
+	// Build the target deployer
+	deployer, ok := h.Deployers[req.Target]
+	if !ok {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("target '%s' is not available in this environment", req.Target))
 		return
 	}
 
@@ -103,7 +110,7 @@ func (h *DeploymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
-		if err := h.Deployer.Deploy(ctx, record, buildCtx.Dir); err != nil {
+		if err := deployer.Deploy(ctx, record, buildCtx.Dir); err != nil {
 			record.Status = deploy.StatusFailed
 			if record.Error == "" {
 				record.Error = err.Error()
@@ -149,9 +156,14 @@ func (h *DeploymentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if record.Status == deploy.StatusRunning {
+		deployer, ok := h.Deployers[record.Target]
+		if !ok {
+			writeError(w, http.StatusInternalServerError, fmt.Sprintf("no deployer for target '%s'", record.Target))
+			return
+		}
 		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 		defer cancel()
-		if err := h.Deployer.Stop(ctx, record); err != nil {
+		if err := deployer.Stop(ctx, record); err != nil {
 			writeError(w, http.StatusInternalServerError, fmt.Sprintf("failed to stop deployment: %v", err))
 			return
 		}

@@ -49,8 +49,12 @@ func makeHandler(t *testing.T, d deploy.Deployer) (*DeploymentHandler, string) {
 	storeDir := t.TempDir()
 	projectsRoot := t.TempDir()
 	return &DeploymentHandler{
-		Store:        store.New(storeDir),
-		Deployer:     d,
+		Store: store.New(storeDir),
+		Deployers: map[string]deploy.Deployer{
+			"local": d,
+			"cloud": d,
+			"edge":  d,
+		},
 		ProjectsRoot: projectsRoot,
 	}, projectsRoot
 }

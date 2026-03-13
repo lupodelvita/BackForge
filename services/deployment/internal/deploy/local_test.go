@@ -105,22 +105,6 @@ func TestLocalDeployer_Stop(t *testing.T) {
 	}
 }
 
-func TestCloudDeployer_ReturnsNotImplemented(t *testing.T) {
-	d := &CloudDeployer{}
-	err := d.Deploy(context.Background(), newRecord("x", 0), "")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestEdgeDeployer_ReturnsNotImplemented(t *testing.T) {
-	d := &EdgeDeployer{}
-	err := d.Deploy(context.Background(), newRecord("x", 0), "")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-}
-
 // errFake is a simple sentinel error for tests.
 var errFake = makeErr("fake error")
 

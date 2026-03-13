@@ -20,11 +20,15 @@ import (
 func main() {
 	cfg := config.Load()
 
-	deployer := resolveDeployer("local")
+	deployers := map[string]deploy.Deployer{
+		"local": deploy.NewLocalDeployer(),
+		"cloud": deploy.NewCloudDeployer(cfg.CloudDockerHost, cfg.CloudRegistry),
+		"edge":  deploy.NewEdgeDeployer(cfg.EdgeExportDir),
+	}
 
 	h := &handlers.DeploymentHandler{
 		Store:        store.New(cfg.DeploymentsDir),
-		Deployer:     deployer,
+		Deployers:    deployers,
 		ProjectsRoot: cfg.ProjectsRoot,
 	}
 
@@ -58,10 +62,4 @@ func main() {
 		log.Fatalf("server error: %v", err)
 	}
 	<-done
-}
-
-func resolveDeployer(defaultTarget string) deploy.Deployer {
-	_ = defaultTarget
-	// Always use LocalDeployer as the default; cloud/edge are stubs for now.
-	return deploy.NewLocalDeployer()
 }

@@ -58,3 +58,96 @@ fn test_full_project_workflow() {
 
     fs::remove_dir_all(dir).ok();
 }
+
+#[test]
+fn test_list_projects_reflects_disk() {
+    let dir = temp_dir();
+    let manager = ProjectManager::new(&dir);
+
+    assert_eq!(manager.list_projects().unwrap().len(), 0);
+
+    manager.create_project("alpha", "").unwrap();
+    manager.create_project("beta", "").unwrap();
+
+    let mut projects = manager.list_projects().unwrap();
+    projects.sort();
+    assert_eq!(projects.len(), 2);
+    assert_eq!(projects[0], "alpha");
+    assert_eq!(projects[1], "beta");
+
+    fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn test_update_project_persists() {
+    let dir = temp_dir();
+    let manager = ProjectManager::new(&dir);
+
+    let mut state = manager.create_project("shop", "online shop").unwrap();
+
+    // Add a table and save again (simulate update)
+    let mut orders = Table::new("orders");
+    orders.add_field(Field::new("id", FieldType::Uuid).primary_key());
+    orders.add_field(Field::new("total", FieldType::Float).not_null());
+    state.schema.tables.push(orders);
+    manager.save_project(&state).unwrap();
+
+    let reloaded = manager.load_project("shop").unwrap();
+    assert_eq!(reloaded.schema.tables.len(), 1);
+    assert_eq!(reloaded.schema.tables[0].name, "orders");
+    assert_eq!(reloaded.schema.tables[0].fields.len(), 2);
+
+    fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn test_duplicate_project_create_fails() {
+    let dir = temp_dir();
+    let manager = ProjectManager::new(&dir);
+
+    manager.create_project("duplicate", "").unwrap();
+    assert!(manager.create_project("duplicate", "").is_err());
+
+    fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn test_load_nonexistent_project_fails() {
+    let dir = temp_dir();
+    let manager = ProjectManager::new(&dir);
+    assert!(manager.load_project("does-not-exist").is_err());
+    fs::remove_dir_all(dir).ok();
+}
+
+#[test]
+fn test_project_state_json_roundtrip() {
+    let dir = temp_dir();
+    let manager = ProjectManager::new(&dir);
+
+    let mut state = manager.create_project("roundtrip", "test").unwrap();
+    let mut t = Table::new("items");
+    t.add_field(Field::new("id", FieldType::Uuid).primary_key());
+    let mut label_field = Field::new("label", FieldType::Text).not_null();
+    label_field.unique = true;
+    t.add_field(label_field);
+    t.add_field(Field::new("count", FieldType::Integer));
+    state.schema.tables.push(t);
+    manager.save_project(&state).unwrap();
+
+    // Deserialize manually from JSON
+    let path = dir.join("roundtrip").join("project_state.json");
+    let raw = fs::read_to_string(&path).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&raw).unwrap();
+
+    let fields = parsed["schema"]["tables"][0]["fields"].as_array().unwrap();
+    assert_eq!(fields.len(), 3);
+    assert_eq!(fields[0]["name"], "id");
+    assert_eq!(fields[0]["primary_key"], true);
+    assert_eq!(fields[1]["name"], "label");
+    assert_eq!(fields[1]["unique"], true);
+    assert_eq!(fields[1]["nullable"], false);
+    assert_eq!(fields[2]["name"], "count");
+
+    fs::remove_dir_all(dir).ok();
+}
+
