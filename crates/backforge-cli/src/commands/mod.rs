@@ -6,3 +6,4 @@ pub mod sync;
 pub mod generate;
 pub mod versions;
 pub mod metrics;
+pub mod security;

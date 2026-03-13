@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use super::schema::ProjectSchema;
+use super::permissions::RbacPolicy;
 
 /// Метаданные проекта
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +35,8 @@ impl ProjectMeta {
 pub struct ProjectState {
     pub meta: ProjectMeta,
     pub schema: ProjectSchema,
-    // Будет расширен в Phase 2 (api, permissions, storage, workflows)
+    #[serde(default = "RbacPolicy::default_policy")]
+    pub permissions: RbacPolicy,
 }
 
 impl ProjectState {
@@ -42,6 +44,7 @@ impl ProjectState {
         Self {
             meta: ProjectMeta::new(name, description),
             schema: ProjectSchema::default(),
+            permissions: RbacPolicy::default_policy(),
         }
     }
 }

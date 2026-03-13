@@ -49,6 +49,11 @@ enum Commands {
         #[command(subcommand)]
         action: MetricsAction,
     },
+    /// Безопасность: RBAC-политики и audit log
+    Security {
+        #[command(subcommand)]
+        action: SecurityAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -118,6 +123,31 @@ enum MetricsAction {
     },
     /// Сводка по проектам
     Summary,
+}
+
+#[derive(Subcommand)]
+enum SecurityAction {
+    /// Показать RBAC-политики проекта (разрешения ролей)
+    PermissionsShow { project: String },
+    /// Проверить конкретное разрешение
+    PermissionsCheck {
+        project: String,
+        #[arg(long)]
+        role: String,
+        #[arg(long)]
+        action: String,
+        #[arg(long)]
+        resource: String,
+    },
+    /// Показать audit log проекта
+    AuditShow {
+        project: String,
+        /// Число последних записей (по умолчанию 20)
+        #[arg(short, long, default_value_t = 20)]
+        last: usize,
+    },
+    /// Число записей в audit log
+    AuditCount { project: String },
 }
 
 #[derive(Subcommand)]
@@ -275,6 +305,20 @@ async fn main() -> Result<()> {
             }
             MetricsAction::Summary => {
                 commands::metrics::cmd_metrics_summary().await?;
+            }
+        },
+        Commands::Security { action } => match action {
+            SecurityAction::PermissionsShow { project } => {
+                commands::security::cmd_permissions_show(project)?;
+            }
+            SecurityAction::PermissionsCheck { project, role, action, resource } => {
+                commands::security::cmd_permissions_check(project, role, action, resource)?;
+            }
+            SecurityAction::AuditShow { project, last } => {
+                commands::security::cmd_audit_show(project, last)?;
+            }
+            SecurityAction::AuditCount { project } => {
+                commands::security::cmd_audit_count(project)?;
             }
         },
     }

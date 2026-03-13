@@ -95,6 +95,9 @@ func GenerateAll(w http.ResponseWriter, r *http.Request) {
 	for k, v := range generators.GenerateHandlers(&req.State) {
 		files[k] = v
 	}
+	for k, v := range generators.GenerateQueries(&req.State) {
+		files[k] = v
+	}
 	files["router.go"] = generators.GenerateRouter(&req.State)
 
 	spec, err := generators.GenerateOpenAPI(&req.State)
