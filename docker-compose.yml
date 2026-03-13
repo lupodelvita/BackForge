@@ -68,12 +68,15 @@ services:
       SYNC_STORE_PATH: /tmp/backforge-sync-store
       BACKFORGE_CODEGEN_URL: http://localhost:8084
       CODEGEN_PORT: "8084"
+      BACKFORGE_METRICS_URL: http://localhost:8085
+      METRICS_PORT: "8085"
     ports:
       - "8080:8080"
       - "8081:8081"
       - "8082:8082"
       - "8083:8083"
       - "8084:8084"
+      - "8085:8085"
       - "5173:5173"
     depends_on:
       postgres:

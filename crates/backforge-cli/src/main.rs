@@ -44,6 +44,11 @@ enum Commands {
         #[command(subcommand)]
         action: VersionAction,
     },
+    /// Мониторинг запросов (латентность, ошибки, статистика)
+    Metrics {
+        #[command(subcommand)]
+        action: MetricsAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -102,6 +107,17 @@ enum GenerateAction {
     Openapi { project: String },
     /// Генерировать всё (SQL + handlers + OpenAPI)
     All { project: String },
+}
+
+#[derive(Subcommand)]
+enum MetricsAction {
+    /// Показать статистику маршрутов (все или по проекту)
+    Show {
+        #[arg(short, long)]
+        project: Option<String>,
+    },
+    /// Сводка по проектам
+    Summary,
 }
 
 #[derive(Subcommand)]
@@ -251,6 +267,14 @@ async fn main() -> Result<()> {
             }
             VersionAction::Show { project, version } => {
                 commands::versions::cmd_version_show(project, version)?;
+            }
+        },
+        Commands::Metrics { action } => match action {
+            MetricsAction::Show { project } => {
+                commands::metrics::cmd_metrics_show(project).await?;
+            }
+            MetricsAction::Summary => {
+                commands::metrics::cmd_metrics_summary().await?;
             }
         },
     }

@@ -17,6 +17,9 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.SetHeader("Content-Type", "application/json"))
 
+	// Metrics recording (fire-and-forget to metrics service)
+	r.Use(middleware.MetricsRecorder)
+
 	// Rate limiting: 100 запросов/мин на IP
 	r.Use(middleware.RateLimit(rdb, 100))
 
@@ -48,6 +51,12 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 		// Codegen proxy routes → forwarded to services/code-generator (port 8084)
 		r.HandleFunc("/generate/*", handlers.CodegenProxy)
 		r.HandleFunc("/generate", handlers.CodegenProxy)
+
+		// Metrics proxy routes → forwarded to services/metrics (port 8085)
+		r.HandleFunc("/metrics/*", handlers.MetricsProxy)
+		r.HandleFunc("/metrics", handlers.MetricsProxy)
+		r.HandleFunc("/metrics/json", handlers.MetricsProxy)
+		r.HandleFunc("/metrics/summary", handlers.MetricsProxy)
 	})
 
 	return r
