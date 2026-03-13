@@ -6,6 +6,7 @@ members = [
     "crates/backforge-migrations",
     "crates/backforge-storage",
     "crates/backforge-sync",
+    "crates/backforge-versions",
 ]
 resolver = "2"
 

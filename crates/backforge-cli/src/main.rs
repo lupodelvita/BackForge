@@ -39,6 +39,11 @@ enum Commands {
         #[command(subcommand)]
         action: GenerateAction,
     },
+    /// Версионирование project_state (история, rollback, diff)
+    Version {
+        #[command(subcommand)]
+        action: VersionAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -97,6 +102,24 @@ enum GenerateAction {
     Openapi { project: String },
     /// Генерировать всё (SQL + handlers + OpenAPI)
     All { project: String },
+}
+
+#[derive(Subcommand)]
+enum VersionAction {
+    /// Сохранить текущий project_state как снимок
+    Commit {
+        project: String,
+        #[arg(short, long)]
+        message: Option<String>,
+    },
+    /// История версий проекта
+    History { project: String },
+    /// Откатить project_state к указанной версии
+    Rollback { project: String, version: u32 },
+    /// Diff между двумя версиями
+    Diff { project: String, from: u32, to: u32 },
+    /// Подробности конкретного снимка
+    Show { project: String, version: u32 },
 }
 
 #[derive(Subcommand)]
@@ -211,6 +234,23 @@ async fn main() -> Result<()> {
             }
             GenerateAction::All { project } => {
                 commands::generate::cmd_generate_all(project).await?;
+            }
+        },
+        Commands::Version { action } => match action {
+            VersionAction::Commit { project, message } => {
+                commands::versions::cmd_version_commit(project, message)?;
+            }
+            VersionAction::History { project } => {
+                commands::versions::cmd_version_history(project)?;
+            }
+            VersionAction::Rollback { project, version } => {
+                commands::versions::cmd_version_rollback(project, version)?;
+            }
+            VersionAction::Diff { project, from, to } => {
+                commands::versions::cmd_version_diff(project, from, to)?;
+            }
+            VersionAction::Show { project, version } => {
+                commands::versions::cmd_version_show(project, version)?;
             }
         },
     }

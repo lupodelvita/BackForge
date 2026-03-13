@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 backforge-core = { path = "../backforge-core" }
 backforge-storage = { path = "../backforge-storage" }
+backforge-versions = { path = "../backforge-versions" }
 tokio = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { workspace = true }
