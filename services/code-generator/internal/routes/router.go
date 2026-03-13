@@ -15,6 +15,7 @@ func New() *chi.Mux {
 	r.Post("/generate/handlers", handlers.GenerateHandlers)
 	r.Post("/generate/openapi", handlers.GenerateOpenAPI)
 	r.Post("/generate/all", handlers.GenerateAll)
+	r.Post("/generate/validate", handlers.GenerateValidate)
 
 	return r
 }

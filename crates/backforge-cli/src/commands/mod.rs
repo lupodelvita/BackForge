@@ -1,9 +1,11 @@
-pub mod migrate;
-pub mod project;
-pub mod storage;
+pub mod ci;
 pub mod deploy;
-pub mod sync;
 pub mod generate;
-pub mod versions;
 pub mod metrics;
+pub mod migrate;
+pub mod plugin;
+pub mod project;
 pub mod security;
+pub mod storage;
+pub mod sync;
+pub mod versions;

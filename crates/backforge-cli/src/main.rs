@@ -59,6 +59,16 @@ enum Commands {
         #[command(subcommand)]
         action: MigrateAction,
     },
+    /// CI/CD: валидация и отчёт по сгенерированным артефактам
+    Ci {
+        #[command(subcommand)]
+        action: CiAction,
+    },
+    /// Плагины анализа фреймворков (Phaser, Unity, Flutter, React Native)
+    Plugin {
+        #[command(subcommand)]
+        action: PluginAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -216,6 +226,25 @@ enum DeployAction {
     Dockerfile { id: String },
 }
 
+#[derive(Subcommand)]
+enum CiAction {
+    /// Генерировать артефакты и запустить все CI-проверки
+    Validate { project: String },
+    /// Генерировать артефакты, запустить проверки и сохранить JSON-отчёт
+    Report { project: String },
+}
+
+#[derive(Subcommand)]
+enum PluginAction {
+    /// Список доступных плагинов фреймворков
+    List,
+    /// Определить фреймворк по исходному файлу
+    Detect {
+        /// Путь к файлу для анализа
+        file: String,
+    },
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
@@ -358,6 +387,22 @@ async fn main() -> Result<()> {
             }
             MigrateAction::Rollback { project } => {
                 commands::migrate::cmd_rollback(project).await?;
+            }
+        },
+        Commands::Ci { action } => match action {
+            CiAction::Validate { project } => {
+                commands::ci::cmd_ci_validate(project).await?;
+            }
+            CiAction::Report { project } => {
+                commands::ci::cmd_ci_report(project).await?;
+            }
+        },
+        Commands::Plugin { action } => match action {
+            PluginAction::List => {
+                commands::plugin::cmd_plugin_list().await?;
+            }
+            PluginAction::Detect { file } => {
+                commands::plugin::cmd_plugin_detect(file).await?;
             }
         },
     }
