@@ -4,7 +4,9 @@ import {
   Background,
   Controls,
   MiniMap,
+  MarkerType,
   applyNodeChanges,
+  type Edge,
   type Node,
   type NodeChange,
   type NodeTypes,
@@ -19,6 +21,36 @@ const nodeTypes: NodeTypes = {
 
 export default function BuilderCanvas() {
   const { project, nodes: builderNodes, selectedNodeId, setNodePosition, selectNode } = useBuilderStore()
+
+  // FK edges derived from uuid *_id fields
+  const rfEdges: Edge[] = useMemo(() => {
+    if (!project) return []
+    const edges: Edge[] = []
+    const tablesByName = new Map(project.schema.tables.map((t) => [t.name, t]))
+    for (const table of project.schema.tables) {
+      for (const field of table.fields) {
+        if (field.primary_key || field.field_type !== 'uuid' || !field.name.endsWith('_id')) continue
+        const base = field.name.slice(0, -3)
+        const targetName =
+          field.references ??
+          tablesByName.get(base + 's')?.name ??
+          tablesByName.get(base)?.name
+        const target = targetName ? tablesByName.get(targetName) : undefined
+        if (!target || target.id === table.id) continue
+        edges.push({
+          id: `fk-${table.id}-${field.id}`,
+          source: table.id,
+          target: target.id,
+          label: field.name,
+          type: 'smoothstep',
+          style: { stroke: '#89b4fa', strokeWidth: 1.5 },
+          labelStyle: { fill: '#6c7086', fontSize: 10 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#89b4fa' },
+        })
+      }
+    }
+    return edges
+  }, [project])
 
   // Преобразуем BuilderNode[] в формат ReactFlow Node[]
   const rfNodes: TableNodeType[] = useMemo(() => {
@@ -81,7 +113,7 @@ export default function BuilderCanvas() {
     <div style={{ flex: 1, height: '100%' }}>
       <ReactFlow
         nodes={rfNodes}
-        edges={[]}
+        edges={rfEdges}
         onNodesChange={onNodesChange}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}

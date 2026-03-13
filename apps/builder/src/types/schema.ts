@@ -19,6 +19,8 @@ export interface Field {
   unique: boolean
   primary_key: boolean
   default_value: string | null
+  /** Optional explicit FK reference: name of the target table */
+  references?: string | null
 }
 
 export interface Index {
@@ -66,3 +68,33 @@ export interface BuilderNode {
   type: BuilderNodeType
   position: NodePosition
 }
+
+// ── CI Validation types ────────────────────────────────────────────────────────
+
+export interface CICheckResult {
+  name: string
+  passed: boolean
+  message: string
+}
+
+export interface CIReport {
+  project: string
+  valid: boolean
+  checks: CICheckResult[]
+}
+
+// ── Migration response types ───────────────────────────────────────────────────
+
+export interface MigrateResult {
+  project: string
+  applied_count: number
+  migrations: string[]
+  message?: string
+}
+
+export interface MigrateStatusResult {
+  project: string
+  applied: string[]
+  pending: string[]
+}
+

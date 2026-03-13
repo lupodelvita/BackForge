@@ -5,10 +5,11 @@ import (
 	"github.com/backforge/api-gateway/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
+func NewRouter(jwtSecret string, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Глобальные middleware
@@ -25,6 +26,15 @@ func NewRouter(jwtSecret string, rdb *redis.Client) *chi.Mux {
 
 	// Публичные маршруты
 	r.Get("/health", handlers.HealthCheck)
+
+	// Project state CRUD (no auth — builder uses these directly)
+	r.Get("/projects", handlers.ListProjects)
+	r.Get("/projects/{name}", handlers.GetProject)
+	r.Put("/projects/{name}", handlers.PutProject)
+
+	// Migration API (no auth — builder triggers from UI)
+	r.Get("/migrate/{name}/status", handlers.MigrateStatus(pool))
+	r.Post("/migrate/{name}/run", handlers.MigrateRun(pool))
 
 	// Защищённые маршруты (JWT обязателен)
 	r.Group(func(r chi.Router) {

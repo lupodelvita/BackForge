@@ -24,6 +24,9 @@ interface BuilderState {
   addField: (tableId: string, field: Omit<Field, 'id'>) => void
   updateField: (tableId: string, fieldId: string, patch: Partial<Field>) => void
   removeField: (tableId: string, fieldId: string) => void
+  moveFieldUp: (tableId: string, fieldId: string) => void
+  moveFieldDown: (tableId: string, fieldId: string) => void
+  setFieldRef: (tableId: string, fieldId: string, references: string | null) => void
 
   // Canvas
   setNodePosition: (nodeId: string, position: NodePosition) => void
@@ -133,6 +136,41 @@ export const useBuilderStore = create<BuilderState>()(
         if (!state.project) return
         const table = state.project.schema.tables.find((t) => t.id === tableId)
         if (table) { table.fields = table.fields.filter((f) => f.id !== fieldId); state.isDirty = true }
+      }),
+
+    moveFieldUp: (tableId, fieldId) =>
+      set((state) => {
+        if (!state.project) return
+        const table = state.project.schema.tables.find((t) => t.id === tableId)
+        if (!table) return
+        const idx = table.fields.findIndex((f) => f.id === fieldId)
+        if (idx <= 0) return
+        const tmp = table.fields[idx - 1]
+        table.fields[idx - 1] = table.fields[idx]
+        table.fields[idx] = tmp
+        state.isDirty = true
+      }),
+
+    moveFieldDown: (tableId, fieldId) =>
+      set((state) => {
+        if (!state.project) return
+        const table = state.project.schema.tables.find((t) => t.id === tableId)
+        if (!table) return
+        const idx = table.fields.findIndex((f) => f.id === fieldId)
+        if (idx < 0 || idx >= table.fields.length - 1) return
+        const tmp = table.fields[idx + 1]
+        table.fields[idx + 1] = table.fields[idx]
+        table.fields[idx] = tmp
+        state.isDirty = true
+      }),
+
+    setFieldRef: (tableId, fieldId, references) =>
+      set((state) => {
+        if (!state.project) return
+        const table = state.project.schema.tables.find((t) => t.id === tableId)
+        if (!table) return
+        const field = table.fields.find((f) => f.id === fieldId)
+        if (field) { field.references = references; state.isDirty = true }
       }),
 
     setNodePosition: (nodeId, position) =>

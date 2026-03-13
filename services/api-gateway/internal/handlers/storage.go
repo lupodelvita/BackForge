@@ -25,13 +25,6 @@ func storageRoot() string {
 	return filepath.Join(home, ".backforge", "storage")
 }
 
-// errorJSON writes a JSON error body.
-func errorJSON(w http.ResponseWriter, status int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
-}
-
 // ---- Bucket handlers -------------------------------------------------------
 
 // PUT /storage/{project}/{bucket}

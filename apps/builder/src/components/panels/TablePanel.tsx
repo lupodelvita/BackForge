@@ -25,7 +25,7 @@ const sectionStyle: React.CSSProperties = {
 }
 
 export default function TablePanel() {
-  const { project, selectedNodeId, renameTable, addField, updateField, removeField, removeTable } =
+  const { project, selectedNodeId, renameTable, addField, updateField, removeField, removeTable, moveFieldUp, moveFieldDown, setFieldRef } =
     useBuilderStore()
 
   const [newFieldName, setNewFieldName] = useState('')
@@ -140,10 +140,40 @@ export default function TablePanel() {
                   ✕
                 </button>
               )}
+              {!field.primary_key && (
+                <>
+                  <button
+                    onClick={() => moveFieldUp(table.id, field.id)}
+                    title="Move up"
+                    style={{ ...btnStyle, width: 'auto', background: 'transparent', color: '#89b4fa', padding: '2px 5px' }}
+                  >↑</button>
+                  <button
+                    onClick={() => moveFieldDown(table.id, field.id)}
+                    title="Move down"
+                    style={{ ...btnStyle, width: 'auto', background: 'transparent', color: '#89b4fa', padding: '2px 5px' }}
+                  >↓</button>
+                </>
+              )}
               {field.primary_key && (
                 <span style={{ marginLeft: 'auto', color: '#f9e2af', opacity: 0.7, fontSize: 10 }}>PK</span>
               )}
             </div>
+            {/* FK reference selector for uuid *_id non-PK fields */}
+            {!field.primary_key && field.field_type === 'uuid' && field.name.endsWith('_id') && (
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginTop: 2 }}>
+                <span style={{ color: '#89b4fa', fontSize: 10, flexShrink: 0 }}>→ ref:</span>
+                <select
+                  value={field.references ?? ''}
+                  onChange={(e) => setFieldRef(table.id, field.id, e.target.value || null)}
+                  style={{ ...inputStyle, fontSize: 11, padding: '2px 6px' }}
+                >
+                  <option value="">auto-detect</option>
+                  {project!.schema.tables
+                    .filter((t) => t.id !== table.id)
+                    .map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                </select>
+              </div>
+            )}
           </div>
         ))}
       </div>

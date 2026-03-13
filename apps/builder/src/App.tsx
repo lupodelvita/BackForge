@@ -3,6 +3,7 @@ import { useBuilderStore, useProjectApi } from '@/store'
 import { nanoid } from '@/store/utils'
 import BuilderCanvas from '@/components/canvas/BuilderCanvas'
 import TablePanel from '@/components/panels/TablePanel'
+import CIReportPanel from '@/components/panels/CIReportPanel'
 
 const appStyle: React.CSSProperties = {
   display: 'flex',
@@ -31,7 +32,11 @@ const mainStyle: React.CSSProperties = {
 
 export default function App() {
   const { project, isDirty, addTable, markSaved } = useBuilderStore()
-  const { loading, error, analyzeCode, saveProject } = useProjectApi()
+  const {
+    loading, generateLoading, migrateLoading, error,
+    ciReport, generateFiles,
+    analyzeCode, saveProject, generateAll, validateCI, runMigrations, clearCIReport,
+  } = useProjectApi()
 
   const [showAnalyzer, setShowAnalyzer] = useState(false)
   const [codeInput, setCodeInput] = useState('')
@@ -50,6 +55,21 @@ export default function App() {
     if (!project) return
     const ok = await saveProject(project)
     if (ok) markSaved()
+  }
+
+  const handleGenerateAll = async () => {
+    if (!project) return
+    await generateAll(project)
+  }
+
+  const handleValidateCI = async () => {
+    if (!project) return
+    await validateCI(project)
+  }
+
+  const handleMigrate = async () => {
+    if (!project) return
+    await runMigrations(project.meta.name)
   }
 
   const handleAddTable = () => {
@@ -103,8 +123,31 @@ export default function App() {
               {loading ? '…' : '💾 Save'}
             </ToolbarBtn>
           )}
+
+          {project && (
+            <ToolbarBtn onClick={handleGenerateAll} color="#a6e3a1" disabled={generateLoading}>
+              {generateLoading ? '…' : '⚙ Generate'}
+            </ToolbarBtn>
+          )}
+
+          {project && (
+            <ToolbarBtn onClick={handleValidateCI} color="#f9e2af" disabled={loading}>
+              {loading ? '…' : '✓ CI Check'}
+            </ToolbarBtn>
+          )}
+
+          {project && (
+            <ToolbarBtn onClick={handleMigrate} color="#cba6f7" disabled={migrateLoading}>
+              {migrateLoading ? '…' : '🗄 Migrate'}
+            </ToolbarBtn>
+          )}
         </div>
       </div>
+
+      {/* CI Report panel */}
+      {ciReport && (
+        <CIReportPanel report={ciReport} files={generateFiles} onClose={clearCIReport} />
+      )}
 
       {/* Analyzer drawer */}
       {showAnalyzer && (

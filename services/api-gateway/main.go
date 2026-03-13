@@ -12,6 +12,7 @@ import (
 
 	"github.com/backforge/api-gateway/internal/config"
 	"github.com/backforge/api-gateway/internal/routes"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -32,8 +33,22 @@ func main() {
 	}
 	log.Println("✓ Redis connected")
 
+	// Optional PostgreSQL connection (for migrations API)
+	var pool *pgxpool.Pool
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		p, dbErr := pgxpool.New(ctx, dbURL)
+		if dbErr != nil {
+			log.Printf("warn: postgres init failed: %v (migrate API disabled)", dbErr)
+		} else if pingErr := p.Ping(ctx); pingErr != nil {
+			log.Printf("warn: postgres ping failed: %v (migrate API disabled)", pingErr)
+		} else {
+			pool = p
+			log.Println("✓ PostgreSQL connected")
+		}
+	}
+
 	// Router
-	r := routes.NewRouter(cfg.JWTSecret, rdb)
+	r := routes.NewRouter(cfg.JWTSecret, rdb, pool)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

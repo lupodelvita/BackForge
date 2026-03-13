@@ -21,6 +21,10 @@ export default defineConfig({
         target: 'http://localhost:8081',
         rewrite: (path) => path.replace(/^\/api\/analyzer/, ''),
       },
+      '/api/codegen': {
+        target: 'http://localhost:8084',
+        rewrite: (path) => path.replace(/^\/api\/codegen/, ''),
+      },
     },
   },
   test: {
