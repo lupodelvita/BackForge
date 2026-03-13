@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import {
   ZoomIn,
   ZoomOut,
@@ -11,6 +11,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { ProjectState } from '@/lib/types'
 
 interface CanvasNode {
   id: string
@@ -20,49 +21,6 @@ interface CanvasNode {
   y: number
   fields?: string[]
 }
-
-const demoNodes: CanvasNode[] = [
-  {
-    id: '1',
-    type: 'table',
-    label: 'users',
-    x: 120,
-    y: 80,
-    fields: ['id: UUID (PK)', 'email: TEXT', 'name: TEXT', 'created_at: TIMESTAMP'],
-  },
-  {
-    id: '2',
-    type: 'table',
-    label: 'posts',
-    x: 420,
-    y: 60,
-    fields: ['id: UUID (PK)', 'title: TEXT', 'body: TEXT', 'user_id: UUID (FK)'],
-  },
-  {
-    id: '3',
-    type: 'endpoint',
-    label: 'POST /api/users',
-    x: 120,
-    y: 320,
-    fields: ['Create user', 'Auth: public', 'Rate limit: 10/min'],
-  },
-  {
-    id: '4',
-    type: 'endpoint',
-    label: 'GET /api/posts',
-    x: 420,
-    y: 300,
-    fields: ['List posts', 'Auth: bearer', 'Pagination: cursor'],
-  },
-  {
-    id: '5',
-    type: 'workflow',
-    label: 'onUserCreated',
-    x: 750,
-    y: 160,
-    fields: ['Trigger: user.created', 'Send welcome email', 'Init defaults'],
-  },
-]
 
 const nodeIcons = {
   table: Table2,
@@ -76,12 +34,27 @@ const nodeColors = {
   workflow: { border: 'border-success/40', bg: 'bg-success/8', icon: 'text-success', glow: 'hover:shadow-[0_0_20px_oklch(72%_0.19_148/0.15)]' },
 }
 
+// Lay out tables in a grid left-to-right
+function buildNodesFromState(projectState: ProjectState): CanvasNode[] {
+  return projectState.schema.tables.map((tbl, i) => ({
+    id: tbl.id,
+    type: 'table' as const,
+    label: tbl.name,
+    x: 80 + (i % 4) * 220,
+    y: 80 + Math.floor(i / 4) * 180,
+    fields: tbl.fields.map((f) =>
+      `${f.name}: ${f.field_type}${f.primary_key ? ' (PK)' : ''}${f.nullable ? '' : ' NOT NULL'}`
+    ),
+  }))
+}
+
 interface CanvasProps {
   onSelectNode: (node: CanvasNode | null) => void
   selectedNodeId: string | null
+  projectState?: ProjectState
 }
 
-export function Canvas({ onSelectNode, selectedNodeId }: CanvasProps) {
+export function Canvas({ onSelectNode, selectedNodeId, projectState }: CanvasProps) {
   const [zoom, setZoom] = useState(1)
   const [showGrid, setShowGrid] = useState(true)
   const [tool, setTool] = useState<'select' | 'pan'>('select')
@@ -90,6 +63,13 @@ export function Canvas({ onSelectNode, selectedNodeId }: CanvasProps) {
   const handleZoomIn = useCallback(() => setZoom((z) => Math.min(2, z + 0.1)), [])
   const handleZoomOut = useCallback(() => setZoom((z) => Math.max(0.3, z - 0.1)), [])
   const handleFit = useCallback(() => setZoom(1), [])
+
+  const nodes: CanvasNode[] = useMemo(() => {
+    if (projectState && projectState.schema.tables.length > 0) {
+      return buildNodesFromState(projectState)
+    }
+    return []
+  }, [projectState])
 
   return (
     <div className="relative flex-1 overflow-hidden bg-bg-root">
@@ -123,7 +103,7 @@ export function Canvas({ onSelectNode, selectedNodeId }: CanvasProps) {
         </span>
       </div>
 
-      {/* Canvas area */}
+        {/* Canvas area */}
       <div
         ref={canvasRef}
         className={cn(
@@ -138,73 +118,77 @@ export function Canvas({ onSelectNode, selectedNodeId }: CanvasProps) {
         }}
         onClick={() => onSelectNode(null)}
       >
-        {/* SVG connection lines */}
+        {/* SVG connection lines — rendered only when there are real tables */}
         <svg className="absolute inset-0 h-full w-full pointer-events-none" style={{ transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
           <defs>
             <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
               <polygon points="0 0, 8 3, 0 6" fill="oklch(45% 0.1 190)" />
             </marker>
           </defs>
-          {/* users → POST /api/users */}
-          <line x1="220" y1="170" x2="220" y2="320" stroke="oklch(45% 0.1 190)" strokeWidth="1.5" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />
-          {/* posts → GET /api/posts */}
-          <line x1="520" y1="150" x2="520" y2="300" stroke="oklch(45% 0.1 55)" strokeWidth="1.5" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />
-          {/* users → posts FK */}
-          <line x1="320" y1="120" x2="420" y2="100" stroke="oklch(55% 0.08 260)" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
-          {/* posts → workflow */}
-          <line x1="620" y1="120" x2="750" y2="180" stroke="oklch(45% 0.1 148)" strokeWidth="1.5" strokeDasharray="6 3" markerEnd="url(#arrowhead)" />
         </svg>
 
         {/* Nodes */}
         <div style={{ transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
-          {demoNodes.map((node) => {
-            const colors = nodeColors[node.type]
-            const Icon = nodeIcons[node.type]
-            const isSelected = selectedNodeId === node.id
-            return (
-              <div
-                key={node.id}
-                className={cn(
-                  'absolute w-52 rounded-lg border bg-bg-surface/95 backdrop-blur-sm shadow-card transition-all duration-150 cursor-pointer select-none',
-                  colors.border,
-                  colors.glow,
-                  isSelected && 'ring-2 ring-accent/50 shadow-glow'
-                )}
-                style={{ left: node.x, top: node.y }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelectNode(node)
-                }}
-              >
-                {/* Node header */}
-                <div
-                  className={cn(
-                    'flex items-center gap-2 rounded-t-lg border-b px-3 py-2',
-                    colors.border,
-                    colors.bg
-                  )}
-                >
-                  <Icon className={cn('size-3.5', colors.icon)} />
-                  <span className="text-xs font-semibold font-mono text-text-primary truncate">
-                    {node.label}
-                  </span>
-                </div>
-                {/* Fields */}
-                {node.fields && (
-                  <div className="px-3 py-2 space-y-0.5">
-                    {node.fields.map((f, i) => (
-                      <p
-                        key={i}
-                        className="text-[11px] font-mono text-text-muted truncate"
-                      >
-                        {f}
-                      </p>
-                    ))}
-                  </div>
-                )}
+          {nodes.length === 0 ? (
+            <div className="flex h-full items-center justify-center pointer-events-none">
+              <div className="text-center opacity-40 mt-32">
+                <Table2 className="size-10 mx-auto mb-3 text-text-muted" />
+                <p className="text-sm text-text-muted">No tables yet — add one from the palette</p>
               </div>
-            )
-          })}
+            </div>
+          ) : (
+            nodes.map((node) => {
+              const colors = nodeColors[node.type]
+              const Icon = nodeIcons[node.type]
+              const isSelected = selectedNodeId === node.id
+              return (
+                <div
+                  key={node.id}
+                  className={cn(
+                    'absolute w-52 rounded-lg border bg-bg-surface/95 backdrop-blur-sm shadow-card transition-all duration-150 cursor-pointer select-none',
+                    colors.border,
+                    colors.glow,
+                    isSelected && 'ring-2 ring-accent/50 shadow-glow'
+                  )}
+                  style={{ left: node.x, top: node.y }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectNode(node)
+                  }}
+                >
+                  {/* Node header */}
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 rounded-t-lg border-b px-3 py-2',
+                      colors.border,
+                      colors.bg
+                    )}
+                  >
+                    <Icon className={cn('size-3.5', colors.icon)} />
+                    <span className="text-xs font-semibold font-mono text-text-primary truncate">
+                      {node.label}
+                    </span>
+                  </div>
+                  {/* Fields */}
+                  {node.fields && (
+                    <div className="px-3 py-2 space-y-0.5">
+                      {node.fields.slice(0, 6).map((f, i) => (
+                        <p
+                          key={i}
+                          className="text-[11px] font-mono text-text-muted truncate"
+                        >
+                          {f}
+                        </p>
+                      ))}
+                      {node.fields.length > 6 && (
+                        <p className="text-[10px] text-text-muted opacity-60">+{node.fields.length - 6} more…</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
     </div>

@@ -1,42 +1,32 @@
 import { NavLink, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard,
   Blocks,
   Activity,
   Rocket,
   Settings,
-  Database,
-  Workflow,
-  BarChart3,
-  Shield,
   ChevronLeft,
   Sparkles,
   FolderPlus,
-  Zap,
+  FolderOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/appStore'
 
-const mainNav = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/builder', icon: Blocks, label: 'Builder' },
-  { to: '/metrics', icon: Activity, label: 'Метрики' },
-  { to: '/deploy', icon: Rocket, label: 'Деплой' },
-  { to: '/settings', icon: Settings, label: 'Настройки' },
-]
-
-const projectNav = [
-  { icon: Database, label: 'База данных' },
-  { icon: Zap, label: 'API' },
-  { icon: Workflow, label: 'Workflows' },
-  { icon: BarChart3, label: 'Аналитика' },
-  { icon: Shield, label: 'Безопасность' },
-]
-
 export function Sidebar() {
-  const { sidebarCollapsed, toggleSidebar, currentProject, projects } =
+  const { t } = useTranslation()
+  const { sidebarCollapsed, toggleSidebar, currentProject, projectNames, setCurrentProject } =
     useAppStore()
   const location = useLocation()
+
+  const mainNav = [
+    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/builder', icon: Blocks, label: t('nav.builder') },
+    { to: '/metrics', icon: Activity, label: t('nav.metrics') },
+    { to: '/deploy', icon: Rocket, label: t('nav.deploy') },
+    { to: '/settings', icon: Settings, label: t('nav.settings') },
+  ]
 
   return (
     <aside
@@ -103,19 +93,25 @@ export function Sidebar() {
       {/* Divider */}
       <div className="mx-3 my-1.5 h-px bg-edge" />
 
-      {/* Project context */}
-      {!sidebarCollapsed && (
+      {/* Projects list */}
+      {!sidebarCollapsed && projectNames.length > 0 && (
         <div className="flex flex-col gap-0.5 p-2">
           <span className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-            Проект
+            Projects
           </span>
-          {projectNav.map((item) => (
+          {projectNames.map((name) => (
             <button
-              key={item.label}
-              className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-all cursor-pointer"
+              key={name}
+              onClick={() => setCurrentProject(name)}
+              className={cn(
+                'flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-1.5 text-sm transition-all cursor-pointer',
+                currentProject === name
+                  ? 'bg-accent/12 text-accent'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-raised'
+              )}
             >
-              <item.icon className="size-4 text-text-muted" />
-              <span>{item.label}</span>
+              <FolderOpen className="size-4 text-text-muted" />
+              <span className="truncate">{name}</span>
             </button>
           ))}
         </div>
@@ -149,8 +145,8 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Project selector */}
-      {!sidebarCollapsed && (
+      {/* Active project indicator */}
+      {!sidebarCollapsed && currentProject && (
         <div className="border-t border-edge p-3">
           <div className="flex items-center gap-2 rounded-[var(--radius-md)] bg-bg-raised px-3 py-2">
             <div className="size-2 rounded-full bg-success animate-pulse-glow" />
@@ -158,12 +154,7 @@ export function Sidebar() {
               <p className="truncate text-xs font-medium text-text-primary">
                 {currentProject}
               </p>
-              <p className="text-[10px] text-text-muted">
-                {projects.find((p) => p.name === currentProject)?.status ===
-                'active'
-                  ? 'Online'
-                  : 'Offline'}
-              </p>
+              <p className="text-[10px] text-text-muted">Active</p>
             </div>
           </div>
         </div>
