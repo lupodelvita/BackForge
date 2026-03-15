@@ -15,6 +15,9 @@ import (
 func NewRouter(cfg *config.Config, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux {
 	r := chi.NewRouter()
 
+	// CORS — must be first so preflight OPTIONS are handled before auth/rate-limit
+	r.Use(middleware.CORS(cfg.FrontendURL))
+
 	// Глобальные middleware
 	r.Use(chimiddleware.Logger)
 	r.Use(chimiddleware.Recoverer)

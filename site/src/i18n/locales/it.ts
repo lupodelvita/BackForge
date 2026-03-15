@@ -148,8 +148,8 @@ export const it: Translations = {
     nav: { openApp: 'Apri App', getStarted: 'Inizia' },
     hero: {
       badge: 'Piattaforma Backend-as-Code',
-      title1: 'Crea backend',
-      title2: 'senza boilerplate',
+      title1: 'Crea back-end',
+      title2: 'senza front-end',
       subtitle: 'BackForge è una piattaforma open-source per progettare schemi visivamente, generare REST API, fare deploy con un click e monitorare tutto in tempo reale.',
       tryFree: 'Prova gratis',
     },
