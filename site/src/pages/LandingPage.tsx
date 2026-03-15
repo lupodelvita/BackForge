@@ -75,14 +75,10 @@ export function LandingPage() {
             {t('landing.hero.subtitle')}
           </p>
           <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
-            <Link to="/register" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
-              {t('landing.nav.getStarted')}
+            <Link to="/app" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
+              {t('landing.nav.preview')}
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <a href="https://github.com/lupodelvita/BackForge" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-edge bg-bg-raised px-6 py-3 text-base font-medium text-text-secondary hover:text-text-primary hover:border-edge-strong transition-colors">
-              <Github className="size-4" />
-              GitHub
-            </a>
           </div>
           <div className="mt-16 flex justify-center">
             <ChevronDown className="size-5 text-text-muted animate-bounce" />
@@ -186,7 +182,7 @@ export function LandingPage() {
         <p className="text-center font-mono text-xs text-text-muted uppercase tracking-widest mb-10">{t('landing.stack.title')}</p>
         <div className="relative overflow-hidden">
           <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
-            {[...STACK, ...STACK].map((tech, i) => (
+            {[...STACK, ...STACK, ...STACK, ...STACK].map((tech, i) => (
               <span key={i} className="rounded-full border border-edge bg-bg-raised px-5 py-2 text-sm text-text-secondary font-mono whitespace-nowrap hover:border-accent/40 hover:text-text-primary transition-colors cursor-default">
                 {tech}
               </span>
@@ -221,9 +217,9 @@ export function LandingPage() {
             <span>BackForge &copy; {new Date().getFullYear()}</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="https://github.com/lupodelvita/BackForge" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-text-primary transition-colors">
+            <span className="text-text-muted cursor-default">
               <Github className="size-4" />
-            </a>
+            </span>
             <LanguageSwitcher variant="pill" />
           </div>
         </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
 import { gatewayApi, metricsApi } from '@/lib/api'
 import type { RouteStats } from '@/lib/types'
 
@@ -13,6 +14,12 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { currentProject, setCurrentProject, setProjectNames } = useAppStore()
+  const { isAuthenticated } = useAuthStore()
+
+  function guardedToBuilder() {
+    if (isAuthenticated) navigate('/app/builder')
+    else navigate('/register')
+  }
 
   const {
     data: projectNames = [],
@@ -113,7 +120,7 @@ export function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{t('common.projects')}</CardTitle>
-              <Button variant="ghost" size="icon-sm" onClick={() => navigate('/builder')}>
+              <Button variant="ghost" size="icon-sm" onClick={guardedToBuilder}>
                 <PlusCircle className="size-4" />
               </Button>
             </div>
@@ -124,7 +131,7 @@ export function DashboardPage() {
             ) : projectNames.length === 0 ? (
               <div className="px-5 py-8 text-center">
                 <p className="text-sm text-text-muted">{t('dashboard.noProjects')}</p>
-                <Button variant="default" size="sm" className="mt-3" onClick={() => navigate('/builder')}>
+                <Button variant="default" size="sm" className="mt-3" onClick={guardedToBuilder}>
                   {t('dashboard.createProject')}
                 </Button>
               </div>
@@ -137,7 +144,7 @@ export function DashboardPage() {
                   return (
                     <button
                       key={name}
-                      onClick={() => { setCurrentProject(name); navigate('/builder') }}
+                      onClick={() => { setCurrentProject(name); guardedToBuilder() }}
                       className={`flex w-full items-center gap-4 px-5 py-3 hover:bg-bg-raised/50 transition-colors text-left ${currentProject === name ? 'border-l-2 border-accent bg-accent/5' : ''}`}
                     >
                       <div className="flex size-10 items-center justify-center rounded-lg bg-bg-raised text-accent font-display font-bold text-sm shrink-0">

@@ -145,7 +145,7 @@ export const es: Translations = {
     migrations: { title: 'Migraciones', run: 'Ejecutar migraciones', status: 'Estado de migraciones', applied: 'Aplicadas', pending: 'Pendientes', noMigrations: 'Sin migraciones pendientes' },
   },
   landing: {
-    nav: { openApp: 'Abrir App', getStarted: 'Empezar' },
+    nav: { openApp: 'Abrir App', getStarted: 'Empezar', preview: 'Vista previa...' },
     hero: {
       badge: 'Plataforma Backend-as-Code',
       title1: 'Crea backends',

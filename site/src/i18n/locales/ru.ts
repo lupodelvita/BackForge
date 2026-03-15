@@ -257,7 +257,7 @@ export const ru: Translations = {
     },
   },
   landing: {
-    nav: { openApp: 'Открыть приложение', getStarted: 'Начать' },
+    nav: { openApp: 'Открыть приложение', getStarted: 'Начать', preview: 'Предосмотр...' },
     hero: {
       badge: 'Платформа Backend-as-Code',
       title1: 'Создавайте бэкенды',

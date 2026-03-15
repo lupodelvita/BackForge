@@ -258,6 +258,7 @@ export const en = {
     nav: {
       openApp: 'Open App',
       getStarted: 'Get Started',
+      preview: 'Preview...',
     },
     hero: {
       badge: 'Backend-as-Code Platform',

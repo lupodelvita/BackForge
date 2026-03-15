@@ -145,7 +145,7 @@ export const uk: Translations = {
     migrations: { title: 'Міграції', run: 'Запустити міграції', status: 'Статус міграцій', applied: 'Застосовані', pending: 'Очікуючі', noMigrations: 'Немає міграцій, що очікують' },
   },
   landing: {
-    nav: { openApp: 'Відкрити додаток', getStarted: 'Почати' },
+    nav: { openApp: 'Відкрити додаток', getStarted: 'Почати', preview: 'Перегляд...' },
     hero: {
       badge: 'Платформа Backend-as-Code',
       title1: 'Створюйте бекенди',
