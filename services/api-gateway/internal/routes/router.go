@@ -16,7 +16,7 @@ func NewRouter(cfg *config.Config, rdb *redis.Client, pool *pgxpool.Pool) *chi.M
 	r := chi.NewRouter()
 
 	// CORS — must be first so preflight OPTIONS are handled before auth/rate-limit
-	r.Use(middleware.CORS(cfg.FrontendURL))
+	r.Use(middleware.CORS())
 
 	// Глобальные middleware
 	r.Use(chimiddleware.Logger)
