@@ -38,7 +38,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   setCurrentProjectState: (state) => set({ currentProjectState: state }),
 
-  setProjectNames: (names) => set({ projectNames: names }),
+  setProjectNames: (names) => set({ projectNames: Array.isArray(names) ? names : [] }),
 
   toggleSidebar: () =>
     set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),

@@ -30,8 +30,9 @@ export function DashboardPage() {
     queryKey: ['projects'],
     queryFn: async () => {
       const res = await gatewayApi.listProjects()
-      setProjectNames(res.data.projects)
-      return res.data.projects
+      const projects: string[] = Array.isArray(res.data.projects) ? res.data.projects : []
+      setProjectNames(projects)
+      return projects
     },
     refetchInterval: 30_000,
   })
