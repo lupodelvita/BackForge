@@ -25,7 +25,7 @@ func Load() *Config {
 		PlatformGitHubClientID:     getEnvAny([]string{"PLATFORM_GITHUB_CLIENT_ID", "GITHUB_CLIENT_ID"}, ""),
 		PlatformGitHubClientSecret: getEnvAny([]string{"PLATFORM_GITHUB_CLIENT_SECRET", "GITHUB_CLIENT_SECRET"}, ""),
 		PlatformGitHubCallbackURL:  getEnvAny([]string{"PLATFORM_GITHUB_CALLBACK_URL", "GITHUB_CALLBACK_URL"}, "http://localhost:8080/auth/github/callback"),
-		FrontendURL:                getEnv("FRONTEND_URL", "http://localhost:3000,http://localhost:5173"),
+		FrontendURL:                getEnv("FRONTEND_URL", "*"),
 		OAuthSecretsKey:            getEnvAny([]string{"OAUTH_SECRETS_KEY", "JWT_SECRET"}, "dev-secret-change-in-production"),
 	}
 }

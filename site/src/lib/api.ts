@@ -23,14 +23,13 @@ import type {
   AnalyzeResponse,
 } from './types'
 
-// Base URLs — all proxied through the site dev server (see vite.config.ts)
-// In production replace with actual service URLs via env vars
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || '/proxy/gateway'
-const ANALYZER_URL = import.meta.env.VITE_ANALYZER_URL || '/proxy/analyzer'
-const DEPLOY_URL = import.meta.env.VITE_DEPLOY_URL || '/proxy/deploy'
-const SYNC_URL = import.meta.env.VITE_SYNC_URL || '/proxy/sync'
-const CODEGEN_URL = import.meta.env.VITE_CODEGEN_URL || '/proxy/codegen'
-const METRICS_URL = import.meta.env.VITE_METRICS_URL || '/proxy/metrics'
+// Base URLs — use env vars in dev, fall back to production Railway URLs
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'https://backforge.up.railway.app'
+const ANALYZER_URL = import.meta.env.VITE_ANALYZER_URL || 'https://backforge.up.railway.app'
+const DEPLOY_URL = import.meta.env.VITE_DEPLOY_URL || 'https://backforge.up.railway.app'
+const SYNC_URL = import.meta.env.VITE_SYNC_URL || 'https://backforge.up.railway.app'
+const CODEGEN_URL = import.meta.env.VITE_CODEGEN_URL || 'https://backforge.up.railway.app'
+const METRICS_URL = import.meta.env.VITE_METRICS_URL || 'https://backforge.up.railway.app'
 
 function makeClient(baseURL: string): AxiosInstance {
   const client = axios.create({
