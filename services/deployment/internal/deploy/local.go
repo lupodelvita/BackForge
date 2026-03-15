@@ -50,7 +50,7 @@ func (d *LocalDeployer) Deploy(ctx context.Context, record *DeploymentRecord, bu
 	out, err = d.Commander.Run(ctx, "docker", "run", "-d",
 		"--name", containerName,
 		"-p", portMapping,
-		"-e", fmt.Sprintf("BACKFORGE_PORT=3000"),
+		"-e", "BACKFORGE_PORT=3000",
 		imageTag,
 	)
 	if err != nil {
