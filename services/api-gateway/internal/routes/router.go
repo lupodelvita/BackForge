@@ -66,6 +66,9 @@ func NewRouter(cfg *config.Config, rdb *redis.Client, pool *pgxpool.Pool) *chi.M
 			r.Post("/auth/github/connect", auth.GitHubConnectInit)
 			r.Get("/auth/providers/github", auth.GetGitHubProviderConfig)
 			r.Put("/auth/providers/github", auth.UpsertGitHubProviderConfig)
+			// Admin-only: configure platform GitHub OAuth from the UI (no .env required)
+			r.Get("/admin/platform/config", auth.GetAdminPlatformConfig)
+			r.Put("/admin/platform/config", auth.UpsertAdminPlatformConfig)
 		}
 		// Динамические API routes из project_state.json — Phase 2.5
 

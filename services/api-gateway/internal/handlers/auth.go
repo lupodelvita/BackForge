@@ -159,6 +159,53 @@ func (h *AuthHandler) platformGitHubConfigured() bool {
 	return h.cfg.PlatformGitHubClientID != "" && h.cfg.PlatformGitHubClientSecret != ""
 }
 
+// platformGitHubCreds returns the effective platform GitHub OAuth credentials.
+// Env vars take priority; if unset the admin-configured DB values are used.
+func (h *AuthHandler) platformGitHubCreds(ctx context.Context) (clientID, secret, callbackURL string, ok bool) {
+	if h.cfg.PlatformGitHubClientID != "" && h.cfg.PlatformGitHubClientSecret != "" {
+		return h.cfg.PlatformGitHubClientID, h.cfg.PlatformGitHubClientSecret, h.cfg.PlatformGitHubCallbackURL, true
+	}
+	var id, enc, cb string
+	if err := h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_client_id'`).Scan(&id); err != nil || id == "" {
+		return "", "", "", false
+	}
+	if err := h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_client_secret_enc'`).Scan(&enc); err != nil || enc == "" {
+		return "", "", "", false
+	}
+	decrypted, err := h.decryptSecret(enc)
+	if err != nil {
+		return "", "", "", false
+	}
+	cb = h.cfg.PlatformGitHubCallbackURL
+	h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_callback_url'`).Scan(&cb) //nolint:errcheck
+	return id, decrypted, cb, true
+}
+
+func (h *AuthHandler) decryptSecret(enc string) (string, error) {
+	data, err := base64.StdEncoding.DecodeString(enc)
+	if err != nil {
+		return "", fmt.Errorf("decode: %w", err)
+	}
+	key := sha256.Sum256([]byte(h.cfg.OAuthSecretsKey))
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	if len(data) < gcm.NonceSize() {
+		return "", fmt.Errorf("ciphertext too short")
+	}
+	nonce, ciphertext := data[:gcm.NonceSize()], data[gcm.NonceSize():]
+	plain, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", err
+	}
+	return string(plain), nil
+}
+
 func (h *AuthHandler) encryptSecret(raw string) (string, error) {
 	key := sha256.Sum256([]byte(h.cfg.OAuthSecretsKey))
 	block, err := aes.NewCipher(key[:])
@@ -363,7 +410,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.generateJWT(u.ID)
+	token, err := h.generateJWT(u.ID, u.Role)
 	if err != nil {
 		errorJSON(w, http.StatusInternalServerError, "failed to generate token")
 		return
@@ -387,9 +434,10 @@ func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 // PlatformGitHubStatus reports whether platform-level GitHub OAuth is configured.
 // This is used only for logging into BackForge itself, not for user-owned public apps.
 func (h *AuthHandler) PlatformGitHubStatus(w http.ResponseWriter, r *http.Request) {
+	_, _, _, ok := h.platformGitHubCreds(r.Context())
 	writeJSON(w, http.StatusOK, map[string]any{
 		"provider":   "github",
-		"configured": h.platformGitHubConfigured(),
+		"configured": ok,
 		"scope":      "platform",
 	})
 }
@@ -534,19 +582,20 @@ func (h *AuthHandler) GitHubAuthorize(w http.ResponseWriter, r *http.Request) {
 		errorJSON(w, http.StatusBadRequest, "mode must be 'login' or 'register'")
 		return
 	}
-	if !h.platformGitHubConfigured() {
+	clientID, _, callbackURL, ok := h.platformGitHubCreds(r.Context())
+	if !ok {
 		h.redirectError(w, r, "platform_github_not_configured")
 		return
 	}
-
-	h.startGitHubFlow(w, r, oauthState{Mode: mode})
+	h.startGitHubFlow(w, r, oauthState{Mode: mode}, clientID, callbackURL)
 }
 
 // GitHubConnectInit handles POST /auth/github/connect (protected — JWT required).
 // Returns the GitHub authorization URL so the frontend can redirect the user.
 func (h *AuthHandler) GitHubConnectInit(w http.ResponseWriter, r *http.Request) {
 	claims := r.Context().Value(middleware.UserClaimsKey).(*middleware.Claims)
-	if !h.platformGitHubConfigured() {
+	clientID, _, callbackURL, ok := h.platformGitHubCreds(r.Context())
+	if !ok {
 		errorJSON(w, http.StatusServiceUnavailable, "GitHub OAuth not configured")
 		return
 	}
@@ -556,18 +605,18 @@ func (h *AuthHandler) GitHubConnectInit(w http.ResponseWriter, r *http.Request) 
 		errorJSON(w, http.StatusInternalServerError, "state storage failed")
 		return
 	}
-	authURL := h.buildGitHubURL(stateKey)
+	authURL := buildGitHubURL(clientID, callbackURL, stateKey)
 	writeJSON(w, http.StatusOK, map[string]string{"url": authURL})
 }
 
 // startGitHubFlow stores OAuth state and redirects to GitHub.
-func (h *AuthHandler) startGitHubFlow(w http.ResponseWriter, r *http.Request, state oauthState) {
+func (h *AuthHandler) startGitHubFlow(w http.ResponseWriter, r *http.Request, state oauthState, clientID, callbackURL string) {
 	stateKey, err := h.storeState(r.Context(), state)
 	if err != nil {
 		errorJSON(w, http.StatusInternalServerError, "state storage failed")
 		return
 	}
-	http.Redirect(w, r, h.buildGitHubURL(stateKey), http.StatusFound)
+	http.Redirect(w, r, buildGitHubURL(clientID, callbackURL, stateKey), http.StatusFound)
 }
 
 func (h *AuthHandler) storeState(ctx context.Context, state oauthState) (string, error) {
@@ -582,11 +631,11 @@ func (h *AuthHandler) storeState(ctx context.Context, state oauthState) (string,
 	return key, nil
 }
 
-func (h *AuthHandler) buildGitHubURL(stateKey string) string {
+func buildGitHubURL(clientID, callbackURL, stateKey string) string {
 	return fmt.Sprintf(
 		"https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s&state=%s&scope=user:email",
-		url.QueryEscape(h.cfg.PlatformGitHubClientID),
-		url.QueryEscape(h.cfg.PlatformGitHubCallbackURL),
+		url.QueryEscape(clientID),
+		url.QueryEscape(callbackURL),
 		url.QueryEscape(stateKey),
 	)
 }
@@ -604,6 +653,12 @@ func (h *AuthHandler) GitHubCallback(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	clientID, clientSecret, callbackURL, ok := h.platformGitHubCreds(ctx)
+	if !ok {
+		h.redirectError(w, r, "platform_github_not_configured")
+		return
+	}
+
 	// Retrieve state (one-time use — delete on read)
 	raw, err := h.rdb.GetDel(ctx, "auth:state:"+stateKey).Bytes()
 	if err != nil {
@@ -617,7 +672,7 @@ func (h *AuthHandler) GitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Exchange code for access token
-	ghToken, err := h.exchangeCode(ctx, code)
+	ghToken, err := h.exchangeCode(ctx, code, clientID, clientSecret, callbackURL)
 	if err != nil {
 		h.redirectError(w, r, "oauth_failed")
 		return
@@ -649,7 +704,7 @@ func (h *AuthHandler) githubLogin(w http.ResponseWriter, r *http.Request, ctx co
 		h.redirectError(w, r, "github_not_registered")
 		return
 	}
-	token, err := h.generateJWT(u.ID)
+	token, err := h.generateJWT(u.ID, u.Role)
 	if err != nil {
 		h.redirectError(w, r, "token_failed")
 		return
@@ -704,14 +759,14 @@ func (h *AuthHandler) githubRegister(w http.ResponseWriter, r *http.Request, ctx
 	u, err := scanUser(h.pool.QueryRow(ctx, `
 		INSERT INTO users (username, email, github_id, github_username, github_email)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, username, email, password_hash, github_id, github_username, github_email
+		RETURNING id, username, email, password_hash, github_id, github_username, github_email, role
 	`, username, email, gh.ID, gh.Login, ghEmail))
 	if err != nil {
 		h.redirectError(w, r, "register_failed")
 		return
 	}
 
-	token, err := h.generateJWT(u.ID)
+	token, err := h.generateJWT(u.ID, u.Role)
 	if err != nil {
 		h.redirectError(w, r, "token_failed")
 		return
@@ -744,12 +799,12 @@ func (h *AuthHandler) githubConnect(w http.ResponseWriter, r *http.Request, ctx 
 
 // ── GitHub HTTP helpers ───────────────────────────────────────────────────────
 
-func (h *AuthHandler) exchangeCode(ctx context.Context, code string) (string, error) {
+func (h *AuthHandler) exchangeCode(ctx context.Context, code, clientID, clientSecret, callbackURL string) (string, error) {
 	body := url.Values{
-		"client_id":     {h.cfg.PlatformGitHubClientID},
-		"client_secret": {h.cfg.PlatformGitHubClientSecret},
+		"client_id":     {clientID},
+		"client_secret": {clientSecret},
 		"code":          {code},
-		"redirect_uri":  {h.cfg.PlatformGitHubCallbackURL},
+		"redirect_uri":  {callbackURL},
 	}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://github.com/login/oauth/access_token",
@@ -846,4 +901,102 @@ func (h *AuthHandler) redirectError(w http.ResponseWriter, r *http.Request, errC
 		fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape(errCode)),
 		http.StatusFound,
 	)
+}
+
+// ── Admin: Platform Config ────────────────────────────────────────────────────
+
+type adminPlatformConfigRequest struct {
+	GitHubClientID     string `json:"github_client_id"`
+	GitHubClientSecret string `json:"github_client_secret"`
+	GitHubCallbackURL  string `json:"github_callback_url"`
+}
+
+type adminPlatformConfigResponse struct {
+	GitHubClientID    string `json:"github_client_id,omitempty"`
+	GitHubCallbackURL string `json:"github_callback_url,omitempty"`
+	HasSecret         bool   `json:"has_secret"`
+	ConfiguredViaEnv  bool   `json:"configured_via_env"`
+}
+
+// GetAdminPlatformConfig handles GET /admin/platform/config (admin only)
+func (h *AuthHandler) GetAdminPlatformConfig(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(middleware.UserClaimsKey).(*middleware.Claims)
+	if claims.Role != "admin" {
+		errorJSON(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	ctx := r.Context()
+	resp := adminPlatformConfigResponse{
+		ConfiguredViaEnv: h.cfg.PlatformGitHubClientID != "",
+	}
+	var secretEnc string
+	h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_client_id'`).Scan(&resp.GitHubClientID)       //nolint:errcheck
+	h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_callback_url'`).Scan(&resp.GitHubCallbackURL) //nolint:errcheck
+	err := h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_client_secret_enc'`).Scan(&secretEnc)
+	resp.HasSecret = err == nil && secretEnc != ""
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// UpsertAdminPlatformConfig handles PUT /admin/platform/config (admin only)
+// Allows the platform admin to configure GitHub OAuth without touching .env
+func (h *AuthHandler) UpsertAdminPlatformConfig(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(middleware.UserClaimsKey).(*middleware.Claims)
+	if claims.Role != "admin" {
+		errorJSON(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	var req adminPlatformConfigRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errorJSON(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	req.GitHubClientID = strings.TrimSpace(req.GitHubClientID)
+	req.GitHubClientSecret = strings.TrimSpace(req.GitHubClientSecret)
+	req.GitHubCallbackURL = strings.TrimSpace(req.GitHubCallbackURL)
+
+	if req.GitHubClientID == "" || req.GitHubCallbackURL == "" {
+		errorJSON(w, http.StatusBadRequest, "github_client_id and github_callback_url are required")
+		return
+	}
+	ctx := r.Context()
+
+	// Build entries to upsert
+	type kv struct{ key, val string }
+	entries := []kv{
+		{"github_client_id", req.GitHubClientID},
+		{"github_callback_url", req.GitHubCallbackURL},
+	}
+	if req.GitHubClientSecret != "" {
+		enc, err := h.encryptSecret(req.GitHubClientSecret)
+		if err != nil {
+			errorJSON(w, http.StatusInternalServerError, "failed to encrypt client secret")
+			return
+		}
+		entries = append(entries, kv{"github_client_secret_enc", enc})
+	} else {
+		// Require secret on first save; allow omitting it on subsequent updates
+		var existing string
+		if err := h.pool.QueryRow(ctx, `SELECT value FROM platform_configs WHERE key = 'github_client_secret_enc'`).Scan(&existing); err != nil || existing == "" {
+			errorJSON(w, http.StatusBadRequest, "github_client_secret is required for initial configuration")
+			return
+		}
+	}
+
+	for _, e := range entries {
+		if _, err := h.pool.Exec(ctx, `
+			INSERT INTO platform_configs (key, value, updated_at)
+			VALUES ($1, $2, NOW())
+			ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+		`, e.key, e.val); err != nil {
+			errorJSON(w, http.StatusInternalServerError, "failed to save platform config")
+			return
+		}
+	}
+
+	writeJSON(w, http.StatusOK, adminPlatformConfigResponse{
+		GitHubClientID:    req.GitHubClientID,
+		GitHubCallbackURL: req.GitHubCallbackURL,
+		HasSecret:         true,
+		ConfiguredViaEnv:  h.cfg.PlatformGitHubClientID != "",
+	})
 }

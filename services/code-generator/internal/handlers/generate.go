@@ -100,6 +100,16 @@ func GenerateAll(w http.ResponseWriter, r *http.Request) {
 	}
 	files["router.go"] = generators.GenerateRouter(&req.State)
 
+	// Inject GitHub OAuth handler when project has stored OAuth credentials
+	if req.State.OAuth != nil && req.State.OAuth.GitHub != nil {
+		files["github_oauth_handler.go"] = generators.GenerateGitHubOAuth(req.State.OAuth.GitHub)
+		files[".env.oauth.example"] = fmt.Sprintf(
+			"# GitHub OAuth credentials (https://github.com/settings/developers)\nGITHUB_CLIENT_ID=%s\nGITHUB_CLIENT_SECRET=<your-secret-here>\nGITHUB_CALLBACK_URL=%s\n",
+			req.State.OAuth.GitHub.ClientID,
+			req.State.OAuth.GitHub.CallbackURL,
+		)
+	}
+
 	spec, err := generators.GenerateOpenAPI(&req.State)
 	if err != nil {
 		errorJSON(w, http.StatusInternalServerError, "openapi generation failed: "+err.Error())

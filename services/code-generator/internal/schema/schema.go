@@ -53,6 +53,19 @@ type ProjectMeta struct {
 }
 
 type ProjectState struct {
-	Meta   ProjectMeta   `json:"meta"`
-	Schema ProjectSchema `json:"schema"`
+	Meta   ProjectMeta    `json:"meta"`
+	Schema ProjectSchema  `json:"schema"`
+	OAuth  *OAuthProviders `json:"oauth,omitempty"`
+}
+
+// OAuthProviders holds optional OAuth provider credentials to inject into generated code.
+type OAuthProviders struct {
+	GitHub *GitHubOAuthConfig `json:"github,omitempty"`
+}
+
+// GitHubOAuthConfig contains the non-secret GitHub OAuth App values stored per-project.
+// The client_secret is intentionally excluded and must be supplied at runtime via env var.
+type GitHubOAuthConfig struct {
+	ClientID    string `json:"client_id"`
+	CallbackURL string `json:"callback_url"`
 }
