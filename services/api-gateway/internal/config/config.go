@@ -18,7 +18,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Port:                       getEnv("API_GATEWAY_PORT", "8080"),
+		Port:                       getEnvAny([]string{"PORT", "API_GATEWAY_PORT"}, "8080"),
 		DatabaseURL:                getEnv("DATABASE_URL", "postgresql://backforge:backforge@localhost:5432/backforge"),
 		RedisURL:                   getEnv("REDIS_URL", "redis://127.0.0.1:6379"),
 		JWTSecret:                  getEnv("JWT_SECRET", "dev-secret-change-in-production"),
