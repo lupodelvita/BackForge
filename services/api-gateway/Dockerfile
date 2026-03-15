@@ -3,10 +3,10 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY services/api-gateway/go.mod services/api-gateway/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY services/api-gateway/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o api-gateway .
 
 # ── Run stage ─────────────────────────────────────────────────────────────────

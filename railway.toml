@@ -1,7 +1,6 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "services/api-gateway/Dockerfile"
-buildContext = "services/api-gateway"
 
 [deploy]
 startCommand = "./api-gateway"
