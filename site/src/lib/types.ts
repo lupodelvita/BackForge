@@ -2,6 +2,44 @@
 // Shared data models — mirrors backend Go/Rust structs exactly
 // ============================================================
 
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string
+  username: string
+  email: string
+  github_username?: string
+  github_email?: string
+  has_password: boolean
+  has_github: boolean
+}
+
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
+export type GitHubOAuthMode = 'login' | 'register'
+
+export interface PlatformOAuthStatus {
+  provider: 'github'
+  configured: boolean
+  scope: 'platform'
+}
+
+export interface GitHubProviderConfig {
+  provider: 'github'
+  scope_type: 'account' | 'project'
+  project_id?: string
+  configured: boolean
+  client_id?: string
+  callback_url?: string
+  has_secret: boolean
+  platform_configured: boolean
+}
+
+// ── Schema ───────────────────────────────────────────────────────────────────
+
 export type FieldType =
   | 'text'
   | 'integer'

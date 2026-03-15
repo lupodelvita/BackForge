@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -11,8 +11,6 @@ import {
   Key,
   Users,
   Lock,
-  Eye,
-  EyeOff,
   Plus,
   Save,
   Globe,
@@ -20,14 +18,19 @@ import {
   Play,
   RefreshCw,
   AlertCircle,
+  Github,
+  UserCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { gatewayApi } from '@/lib/api'
+import { gatewayApi, authApi } from '@/lib/api'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
 import { SUPPORTED_LANGUAGES } from '@/i18n'
 
 /* ─── Migrations Panel ─── */
@@ -223,12 +226,12 @@ function LanguagePanel() {
 /* ─── Integrations ─── */
 
 const integrations = [
-  { name: 'Auth0', description: 'Authentication & user management', category: 'Auth', connected: true, color: 'text-ember' },
+  { name: 'Auth0', description: 'Authentication & user management', category: 'Auth', connected: false, color: 'text-ember' },
   { name: 'Stripe', description: 'Payments & subscriptions', category: 'Payments', connected: false, color: 'text-info' },
-  { name: 'GitHub', description: 'Repositories & CI/CD', category: 'DevOps', connected: true, color: 'text-text-primary' },
+  { name: 'GitHub', description: 'Repositories & CI/CD', category: 'DevOps', connected: false, color: 'text-text-primary' },
   { name: 'Twilio', description: 'SMS & push notifications', category: 'Messaging', connected: false, color: 'text-danger' },
-  { name: 'Redis', description: 'Caching & message queues', category: 'Data', connected: true, color: 'text-danger' },
-  { name: 'S3 / MinIO', description: 'Object storage', category: 'Storage', connected: true, color: 'text-ember' },
+  { name: 'Redis', description: 'Caching & message queues', category: 'Data', connected: false, color: 'text-danger' },
+  { name: 'S3 / MinIO', description: 'Object storage', category: 'Storage', connected: false, color: 'text-ember' },
 ]
 
 function IntegrationsPanel() {
@@ -264,10 +267,10 @@ function IntegrationsPanel() {
 /* ─── CI/CD ─── */
 
 const pipelines = [
-  { name: 'GitHub Actions', enabled: true, trigger: 'on push to main' },
+  { name: 'GitHub Actions', enabled: false, trigger: 'on push to main' },
   { name: 'GitLab CI', enabled: false, trigger: 'manual' },
-  { name: 'Auto-test on deploy', enabled: true, trigger: 'pre-deploy hook' },
-  { name: 'Auto-migration', enabled: true, trigger: 'on schema change' },
+  { name: 'Auto-test on deploy', enabled: false, trigger: 'pre-deploy hook' },
+  { name: 'Auto-migration', enabled: false, trigger: 'on schema change' },
 ]
 
 function CICDPanel() {
@@ -306,15 +309,9 @@ function CICDPanel() {
 
 /* ─── Security ─── */
 
-const rbacRoles = [
-  { name: 'admin', permissions: ['read', 'write', 'delete', 'manage'], users: 1 },
-  { name: 'developer', permissions: ['read', 'write'], users: 3 },
-  { name: 'viewer', permissions: ['read'], users: 5 },
-]
+const rbacRoles: { name: string; permissions: string[]; users: number }[] = []
 
 function SecurityPanel() {
-  const [showKeys, setShowKeys] = useState(false)
-
   return (
     <div className="space-y-6">
       <Card>
@@ -325,25 +322,33 @@ function SecurityPanel() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y divide-edge">
-            {rbacRoles.map((role) => (
-              <div key={role.name} className="flex items-center gap-4 px-5 py-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-bg-raised">
-                  <Users className="size-4 text-text-muted" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono font-medium text-text-primary">{role.name}</span>
-                    <span className="text-[11px] text-text-muted">({role.users} user{role.users !== 1 ? 's' : ''})</span>
+          {rbacRoles.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <Users className="mx-auto size-8 text-text-muted/50 mb-2" />
+              <p className="text-sm text-text-muted">No roles configured yet</p>
+              <p className="text-xs text-text-muted/70 mt-1">Create roles to manage access control for your team</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-edge">
+              {rbacRoles.map((role) => (
+                <div key={role.name} className="flex items-center gap-4 px-5 py-3">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-bg-raised">
+                    <Users className="size-4 text-text-muted" />
                   </div>
-                  <div className="mt-1 flex gap-1">
-                    {role.permissions.map((perm) => <Badge key={perm} variant="muted">{perm}</Badge>)}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono font-medium text-text-primary">{role.name}</span>
+                      <span className="text-[11px] text-text-muted">({role.users} user{role.users !== 1 ? 's' : ''})</span>
+                    </div>
+                    <div className="mt-1 flex gap-1">
+                      {role.permissions.map((perm) => <Badge key={perm} variant="muted">{perm}</Badge>)}
+                    </div>
                   </div>
+                  <Button variant="ghost" size="sm">Edit</Button>
                 </div>
-                <Button variant="ghost" size="sm">Edit</Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -351,27 +356,15 @@ function SecurityPanel() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">API Keys</CardTitle>
-            <button onClick={() => setShowKeys(!showKeys)} className="text-text-muted hover:text-text-primary cursor-pointer">
-              {showKeys ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
+            <Button variant="secondary" size="sm"><Plus className="size-3" />Generate Key</Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            { name: 'Production', key: 'bf_prod_a1b2c3d4e5f6g7h8i9j0', active: true },
-            { name: 'Development', key: 'bf_dev_k1l2m3n4o5p6q7r8s9t0', active: true },
-          ].map((apiKey) => (
-            <div key={apiKey.name} className="flex items-center gap-3 rounded-lg border border-edge bg-bg-raised/50 px-4 py-3">
-              <Key className="size-4 text-text-muted shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary">{apiKey.name}</p>
-                <p className="text-xs font-mono text-text-muted truncate">
-                  {showKeys ? apiKey.key : '••••••••••••••••••••••'}
-                </p>
-              </div>
-              <Badge variant={apiKey.active ? 'success' : 'muted'}>{apiKey.active ? 'active' : 'revoked'}</Badge>
-            </div>
-          ))}
+        <CardContent>
+          <div className="px-1 py-6 text-center">
+            <Key className="mx-auto size-8 text-text-muted/50 mb-2" />
+            <p className="text-sm text-text-muted">No API keys generated</p>
+            <p className="text-xs text-text-muted/70 mt-1">Generate keys to authenticate external API access</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -382,14 +375,256 @@ function SecurityPanel() {
             'SQL Injection Protection', 'XSS Prevention', 'CSRF Tokens',
             'Rate Limiting', 'Audit Logging', 'Input Validation',
           ].map((label) => (
-            <div key={label} className="flex items-center justify-between rounded-md px-3 py-2 bg-success/5 border border-success/15">
+            <div key={label} className="flex items-center justify-between rounded-md px-3 py-2 bg-bg-raised/50 border border-edge">
               <div className="flex items-center gap-2">
-                <Lock className="size-3.5 text-success" />
+                <Lock className="size-3.5 text-text-muted" />
                 <span className="text-sm text-text-primary">{label}</span>
               </div>
-              <Badge variant="success">enabled</Badge>
+              <Badge variant="muted">not configured</Badge>
             </div>
           ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+/* ─── Account (GitHub Connect) ─── */
+
+function AccountPanel() {
+  const { t } = useTranslation()
+  const { currentProjectState } = useAppStore()
+  const { user, setAuth } = useAuthStore()
+  const [connecting, setConnecting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [callbackUrl, setCallbackUrl] = useState('')
+
+  // Pick up ?github_connected=true from Settings redirect after OAuth
+  const searchParams = new URLSearchParams(window.location.search)
+  const justConnected = searchParams.get('github_connected') === 'true'
+  const projectId = currentProjectState?.meta?.id
+
+  async function handleConnect() {
+    setConnecting(true)
+    setErrorMsg('')
+    try {
+      const res = await authApi.githubConnectInit()
+      window.location.href = res.data.url
+    } catch {
+      setErrorMsg(t('auth.errors.generic'))
+      setConnecting(false)
+    }
+  }
+
+  // Refresh user from /auth/me if we just connected
+  const meQuery = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: () => authApi.me().then((r) => r.data),
+    enabled: justConnected,
+    staleTime: 0,
+  })
+
+  const platformStatusQuery = useQuery({
+    queryKey: ['platform-github-status'],
+    queryFn: () => authApi.platformGitHubStatus().then((r) => r.data),
+  })
+
+  const providerConfigQuery = useQuery({
+    queryKey: ['github-provider-config', projectId ?? 'account'],
+    queryFn: () => authApi.getGitHubProviderConfig(projectId).then((r) => r.data),
+    enabled: !!user,
+  })
+
+  const saveProviderConfig = useMutation({
+    mutationFn: () => authApi.saveGitHubProviderConfig({
+      project_id: projectId,
+      client_id: clientId,
+      client_secret: clientSecret,
+      callback_url: callbackUrl,
+    }),
+    onSuccess: ({ data }) => {
+      setClientId(data.client_id ?? '')
+      setCallbackUrl(data.callback_url ?? '')
+      setClientSecret('')
+      providerConfigQuery.refetch()
+    },
+  })
+
+  const currentUser = meQuery.data ?? user
+
+  useEffect(() => {
+    if (!meQuery.data || meQuery.data === user) {
+      return
+    }
+    const token = localStorage.getItem('backforge_token')
+    if (token) {
+      setAuth(meQuery.data, token)
+    }
+  }, [meQuery.data, setAuth, user])
+
+  useEffect(() => {
+    if (!providerConfigQuery.data) {
+      return
+    }
+    setClientId(providerConfigQuery.data.client_id ?? '')
+    setCallbackUrl(providerConfigQuery.data.callback_url ?? '')
+    setClientSecret('')
+  }, [providerConfigQuery.data])
+
+  return (
+    <div className="space-y-4">
+      {/* User info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <UserCircle className="size-4" />
+            {t('nav.settings')} — {t('auth.username')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-full bg-accent/15 border border-accent/25 text-accent font-bold text-sm">
+              {currentUser?.username?.charAt(0)?.toUpperCase() ?? '?'}
+            </span>
+            <div>
+              <p className="text-sm font-medium text-text-primary">{currentUser?.username}</p>
+              <p className="text-xs text-text-muted">{currentUser?.email}</p>
+            </div>
+          </div>
+          {currentUser?.has_password && (
+            <Badge variant="success">Password login enabled</Badge>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* GitHub Connect */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Github className="size-4" />
+            {t('auth.github.connectTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-text-muted">{t('auth.github.connectDescription')}</p>
+
+          {(justConnected || currentUser?.has_github) ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-success">
+                <CheckCircle2 className="size-4" />
+                <span className="text-sm font-medium">{t('auth.github.connected')}</span>
+              </div>
+              {currentUser?.github_username && (
+                <p className="text-sm text-text-secondary">
+                  {t('auth.github.connectedAs')}{' '}
+                  <a
+                    href={`https://github.com/${currentUser.github_username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline font-medium"
+                  >
+                    @{currentUser.github_username}
+                  </a>
+                </p>
+              )}
+              {justConnected && (
+                <p className="text-xs text-success">{t('auth.github.connectSuccess')}</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-text-muted">
+                <XCircle className="size-4" />
+                <span className="text-sm">{t('auth.github.notConnected')}</span>
+              </div>
+              {errorMsg && (
+                <p className="text-xs text-danger">{errorMsg}</p>
+              )}
+              <Button
+                variant="secondary"
+                onClick={handleConnect}
+                disabled={connecting}
+              >
+                {connecting ? (
+                  <RefreshCw className="size-3.5 animate-spin" />
+                ) : (
+                  <Github className="size-3.5" />
+                )}
+                {t('auth.github.connectButton')}
+              </Button>
+              <p className="text-xs text-text-muted">
+                You will be redirected to GitHub to authorize access.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Github className="size-4" />
+            GitHub OAuth App Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border border-edge bg-bg-raised/50 p-4 space-y-2">
+            <p className="text-sm text-text-primary font-medium">Platform login vs your project OAuth</p>
+            <p className="text-xs text-text-muted">
+              GitHub sign-in for BackForge itself uses one platform OAuth app. That is not per-user.
+              If you want GitHub auth inside your own generated public app, save your own OAuth app config below.
+              It will be stored under your account and current project scope.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={platformStatusQuery.data?.configured ? 'success' : 'muted'}>
+                Platform OAuth: {platformStatusQuery.data?.configured ? 'configured' : 'not configured'}
+              </Badge>
+              <Badge variant={providerConfigQuery.data?.configured ? 'success' : 'muted'}>
+                {projectId ? 'Project GitHub App' : 'Account GitHub App'}: {providerConfigQuery.data?.configured ? 'saved' : 'not saved'}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-text-secondary">Client ID</label>
+              <Input value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="Iv1.abc123..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-text-secondary">Callback URL</label>
+              <Input value={callbackUrl} onChange={(e) => setCallbackUrl(e.target.value)} placeholder="https://your-app.com/auth/github/callback" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-text-secondary">Client Secret</label>
+            <Input
+              type="password"
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              placeholder={providerConfigQuery.data?.has_secret ? 'Secret already saved. Enter a new one to rotate.' : 'gho_...'}
+            />
+            <p className="text-xs text-text-muted">
+              Stored encrypted in the database and scoped to {projectId ? 'this project' : 'your account'}.
+            </p>
+          </div>
+
+          {saveProviderConfig.isError && (
+            <p className="text-xs text-danger">Failed to save OAuth app config.</p>
+          )}
+          {saveProviderConfig.isSuccess && (
+            <p className="text-xs text-success">OAuth app config saved.</p>
+          )}
+
+          <Button
+            onClick={() => saveProviderConfig.mutate()}
+            disabled={saveProviderConfig.isPending || !clientId || !clientSecret || !callbackUrl}
+          >
+            {saveProviderConfig.isPending ? <RefreshCw className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            Save GitHub OAuth App
+          </Button>
         </CardContent>
       </Card>
     </div>
@@ -404,6 +639,7 @@ export function SettingsPage() {
 
   const tabs = [
     { id: 'general', label: t('settings.general'), icon: Sliders },
+    { id: 'account', label: 'Account', icon: UserCircle },
     { id: 'language', label: t('settings.language'), icon: Globe },
     { id: 'integrations', label: t('settings.integrations'), icon: Plug },
     { id: 'cicd', label: t('settings.cicd'), icon: GitBranch },
@@ -412,6 +648,7 @@ export function SettingsPage() {
 
   const panels: Record<string, React.ReactNode> = {
     general: <GeneralPanel />,
+    account: <AccountPanel />,
     language: <LanguagePanel />,
     integrations: <IntegrationsPanel />,
     cicd: <CICDPanel />,

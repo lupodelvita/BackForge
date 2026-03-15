@@ -22,6 +22,8 @@ const TOOLTIP_STYLE = {
   color: 'oklch(85% 0.01 260)',
 }
 
+const CURSOR_STYLE = { fill: 'oklch(30% 0.015 260 / 0.15)' }
+
 export function MetricsPage() {
   const { t } = useTranslation()
   const { currentProject } = useAppStore()
@@ -33,9 +35,10 @@ export function MetricsPage() {
     refetchInterval: 10_000,
   })
 
+  const userStats = allStats.filter((s: RouteStats) => s.project !== '_gateway')
   const stats: RouteStats[] = currentProject
-    ? allStats.filter((s: RouteStats) => s.project === currentProject)
-    : allStats
+    ? userStats.filter((s: RouteStats) => s.project === currentProject)
+    : userStats
 
   // Build time-series data from route stats for the area chart
   const chartData = stats
@@ -113,7 +116,7 @@ export function MetricsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(25% 0.01 260)" horizontal={false} />
                 <XAxis type="number" tick={{ fill: 'oklch(55% 0.01 260)', fontSize: 11 }} />
                 <YAxis dataKey="name" type="category" width={180} tick={{ fill: 'oklch(55% 0.01 260)', fontSize: 10 }} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={CURSOR_STYLE} />
                 <Legend />
                 <Bar dataKey="requests" name={t('metrics.requests')} fill="oklch(78% 0.155 190)" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="errors" name={t('metrics.errors')} fill="oklch(60% 0.2 25)" radius={[0, 4, 4, 0]} />
@@ -141,7 +144,7 @@ export function MetricsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(25% 0.01 260)" />
                 <XAxis dataKey="name" hide />
                 <YAxis tick={{ fill: 'oklch(55% 0.01 260)', fontSize: 11 }} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={CURSOR_STYLE} />
                 <Area type="monotone" dataKey="p50" name="avg ms" stroke="oklch(76% 0.14 55)" fill="url(#durGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
@@ -167,30 +170,30 @@ export function MetricsPage() {
             <div className="py-8 text-center text-sm text-text-muted">{t('metrics.noStats')}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-edge text-text-muted">
-                    <th className="py-2 pl-4 text-left font-medium">{t('metrics.method')}</th>
-                    <th className="py-2 text-left font-medium">{t('metrics.route')}</th>
-                    <th className="py-2 text-right font-medium">{t('metrics.requests')}</th>
-                    <th className="py-2 text-right font-medium">{t('metrics.errors')}</th>
-                    <th className="py-2 text-right font-medium">{t('metrics.minDuration')}</th>
-                    <th className="py-2 text-right font-medium">{t('metrics.maxDuration')}</th>
-                    <th className="py-2 pr-4 text-right font-medium">{t('metrics.lastSeen')}</th>
+                    <th className="py-2.5 pl-4 text-left text-xs font-semibold uppercase tracking-wider">{t('metrics.method')}</th>
+                    <th className="py-2.5 text-left text-xs font-semibold uppercase tracking-wider">{t('metrics.route')}</th>
+                    <th className="py-2.5 text-right text-xs font-semibold uppercase tracking-wider">{t('metrics.requests')}</th>
+                    <th className="py-2.5 text-right text-xs font-semibold uppercase tracking-wider">{t('metrics.errors')}</th>
+                    <th className="py-2.5 text-right text-xs font-semibold uppercase tracking-wider">{t('metrics.minDuration')}</th>
+                    <th className="py-2.5 text-right text-xs font-semibold uppercase tracking-wider">{t('metrics.maxDuration')}</th>
+                    <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider">{t('metrics.lastSeen')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredStats.map((s: RouteStats) => (
                     <tr key={`${s.project}-${s.method}-${s.route}`} className="border-b border-edge/50 hover:bg-bg-raised/30 transition-colors">
-                      <td className="py-2 pl-4">
-                        <Badge variant="muted" className="font-mono">{s.method}</Badge>
+                      <td className="py-2.5 pl-4">
+                        <Badge variant="muted" className="font-mono text-xs">{s.method}</Badge>
                       </td>
-                      <td className="py-2 font-mono text-text-secondary">{s.route}</td>
-                      <td className="py-2 text-right text-text-primary">{s.requests}</td>
-                      <td className={`py-2 text-right ${s.errors > 0 ? 'text-red-400' : 'text-text-muted'}`}>{s.errors}</td>
-                      <td className="py-2 text-right text-text-muted">{s.min_duration_ms.toFixed(1)}</td>
-                      <td className="py-2 text-right text-text-muted">{s.max_duration_ms.toFixed(1)}</td>
-                      <td className="py-2 pr-4 text-right text-text-muted">
+                      <td className="py-2.5 font-mono text-sm text-text-secondary">{s.route}</td>
+                      <td className="py-2.5 text-right tabular-nums text-text-primary">{s.requests}</td>
+                      <td className={`py-2.5 text-right tabular-nums ${s.errors > 0 ? 'text-red-400' : 'text-text-muted'}`}>{s.errors}</td>
+                      <td className="py-2.5 text-right tabular-nums text-text-muted">{s.min_duration_ms.toFixed(1)}</td>
+                      <td className="py-2.5 text-right tabular-nums text-text-muted">{s.max_duration_ms.toFixed(1)}</td>
+                      <td className="py-2.5 pr-4 text-right text-text-muted">
                         {new Date(s.last_seen_at).toLocaleTimeString()}
                       </td>
                     </tr>

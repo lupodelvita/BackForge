@@ -3,6 +3,11 @@
 // ============================================================
 import axios, { type AxiosInstance } from 'axios'
 import type {
+  User,
+  AuthResponse,
+  GitHubOAuthMode,
+  PlatformOAuthStatus,
+  GitHubProviderConfig,
   ProjectState,
   DeploymentRecord,
   DeployTarget,
@@ -20,12 +25,12 @@ import type {
 
 // Base URLs — all proxied through the site dev server (see vite.config.ts)
 // In production replace with actual service URLs via env vars
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:8080'
-const ANALYZER_URL = import.meta.env.VITE_ANALYZER_URL || 'http://localhost:8081'
-const DEPLOY_URL = import.meta.env.VITE_DEPLOY_URL || 'http://localhost:8082'
-const SYNC_URL = import.meta.env.VITE_SYNC_URL || 'http://localhost:8083'
-const CODEGEN_URL = import.meta.env.VITE_CODEGEN_URL || 'http://localhost:8084'
-const METRICS_URL = import.meta.env.VITE_METRICS_URL || 'http://localhost:8085'
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || '/proxy/gateway'
+const ANALYZER_URL = import.meta.env.VITE_ANALYZER_URL || '/proxy/analyzer'
+const DEPLOY_URL = import.meta.env.VITE_DEPLOY_URL || '/proxy/deploy'
+const SYNC_URL = import.meta.env.VITE_SYNC_URL || '/proxy/sync'
+const CODEGEN_URL = import.meta.env.VITE_CODEGEN_URL || '/proxy/codegen'
+const METRICS_URL = import.meta.env.VITE_METRICS_URL || '/proxy/metrics'
 
 function makeClient(baseURL: string): AxiosInstance {
   const client = axios.create({
@@ -44,6 +49,42 @@ function makeClient(baseURL: string): AxiosInstance {
   })
 
   return client
+}
+
+// ============================================================
+// Auth — all on the API Gateway (port 8080)
+// ============================================================
+export const authApi = {
+  register: (username: string, email: string, password: string) =>
+    gateway.post<AuthResponse>('/auth/register', { username, email, password }),
+
+  login: (email: string, password: string) =>
+    gateway.post<AuthResponse>('/auth/login', { email, password }),
+
+  me: () => gateway.get<User>('/auth/me'),
+
+  platformGitHubStatus: () =>
+    gateway.get<PlatformOAuthStatus>('/auth/platform/github'),
+
+  /** Returns the GitHub OAuth URL so the frontend can redirect the user. */
+  githubConnectInit: () =>
+    gateway.post<{ url: string }>('/auth/github/connect'),
+
+  getGitHubProviderConfig: (projectId?: string) =>
+    gateway.get<GitHubProviderConfig>('/auth/providers/github', {
+      params: projectId ? { project_id: projectId } : undefined,
+    }),
+
+  saveGitHubProviderConfig: (payload: {
+    project_id?: string
+    client_id: string
+    client_secret: string
+    callback_url: string
+  }) => gateway.put<GitHubProviderConfig>('/auth/providers/github', payload),
+
+  /** Builds the GitHub authorize URL for login or register flows. */
+  githubUrl: (mode: GitHubOAuthMode) =>
+    `${GATEWAY_URL}/auth/github?mode=${mode}`,
 }
 
 // ============================================================

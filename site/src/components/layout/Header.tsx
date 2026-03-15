@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   Search,
   Bell,
@@ -9,23 +10,34 @@ import {
   WifiOff,
   Globe,
   Check,
+  LogOut,
+  User,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
 import { Badge } from '@/components/ui/badge'
 import { SUPPORTED_LANGUAGES } from '@/i18n'
 
 export function Header() {
   const { currentProject } = useAppStore()
   const { i18n } = useTranslation()
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
   const [langOpen, setLangOpen] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
   const langRef = useRef<HTMLDivElement>(null)
+  const userRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function onOutside(e: MouseEvent) {
       if (langRef.current && !langRef.current.contains(e.target as Node)) {
         setLangOpen(false)
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserOpen(false)
       }
     }
     document.addEventListener('mousedown', onOutside)
@@ -116,6 +128,38 @@ export function Header() {
 
         {/* Theme */}
         <IconBtn icon={Moon} tooltip="Theme" />
+
+        {/* User menu */}
+        {user && (
+          <div ref={userRef} className="relative ml-1">
+            <button
+              onClick={() => setUserOpen((v) => !v)}
+              className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] px-2 text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors cursor-pointer"
+            >
+              <span className="flex size-6 items-center justify-center rounded-full bg-accent/20 text-accent">
+                <User className="size-3.5" />
+              </span>
+              <span className="text-xs font-medium max-w-[80px] truncate">{user.username}</span>
+              <ChevronDown className="size-3 text-text-muted" />
+            </button>
+
+            {userOpen && (
+              <div className="absolute right-0 top-9 z-50 min-w-[160px] rounded-lg border border-edge bg-bg-surface shadow-panel overflow-hidden">
+                <div className="px-3 py-2 border-b border-edge">
+                  <p className="text-xs font-medium text-text-primary truncate">{user.username}</p>
+                  <p className="text-xs text-text-muted truncate">{user.email}</p>
+                </div>
+                <button
+                  onClick={() => { setUserOpen(false); logout(); navigate('/login') }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                >
+                  <LogOut className="size-3.5" />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   )

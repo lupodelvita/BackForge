@@ -56,10 +56,11 @@ export function DashboardPage() {
     retry: false,
   })
 
+  const userStats = allStats.filter((s: RouteStats) => s.project !== '_gateway')
   const tableCount = projectState?.schema.tables.length ?? 0
-  const totalRequests = allStats.reduce((s: number, r: RouteStats) => s + r.requests, 0)
-  const totalErrors = allStats.reduce((s: number, r: RouteStats) => s + r.errors, 0)
-  const routeCount = allStats.filter(
+  const totalRequests = userStats.reduce((s: number, r: RouteStats) => s + r.requests, 0)
+  const totalErrors = userStats.reduce((s: number, r: RouteStats) => s + r.errors, 0)
+  const routeCount = userStats.filter(
     (s: RouteStats) => !currentProject || s.project === currentProject,
   ).length
 
@@ -130,7 +131,7 @@ export function DashboardPage() {
             ) : (
               <div className="divide-y divide-edge">
                 {projectNames.map((name) => {
-                  const ps = allStats.filter((s: RouteStats) => s.project === name)
+                  const ps = userStats.filter((s: RouteStats) => s.project === name)
                   const req = ps.reduce((a: number, s: RouteStats) => a + s.requests, 0)
                   const err = ps.reduce((a: number, s: RouteStats) => a + s.errors, 0)
                   return (
@@ -160,19 +161,19 @@ export function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>{t('metrics.requests')}</CardTitle></CardHeader>
           <CardContent className="p-0">
-            {allStats.length === 0 ? (
+            {userStats.length === 0 ? (
               <div className="px-5 py-8 text-center text-sm text-text-muted">{t('metrics.noStats')}</div>
             ) : (
               <div className="divide-y divide-edge max-h-72 overflow-y-auto">
-                {allStats
+                {userStats
                   .filter((s: RouteStats) => !currentProject || s.project === currentProject)
                   .sort((a: RouteStats, b: RouteStats) => b.requests - a.requests)
                   .slice(0, 12)
                   .map((s: RouteStats) => (
-                    <div key={`${s.project}-${s.method}-${s.route}`} className="flex items-center gap-3 px-4 py-2 text-xs">
-                      <Badge variant="muted" className="font-mono shrink-0">{s.method}</Badge>
-                      <span className="flex-1 font-mono text-text-secondary truncate">{s.route}</span>
-                      <span className="text-text-muted shrink-0">{s.requests}</span>
+                    <div key={`${s.project}-${s.method}-${s.route}`} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                      <Badge variant="muted" className="font-mono text-xs shrink-0">{s.method}</Badge>
+                      <span className="flex-1 font-mono text-sm text-text-secondary truncate">{s.route}</span>
+                      <span className="text-text-muted tabular-nums shrink-0">{s.requests}</span>
                     </div>
                   ))}
               </div>
