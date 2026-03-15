@@ -89,6 +89,26 @@
   }
 }
 
+/* ─── Light Theme Override (html:not(.dark)) ─── */
+html:not(.dark) {
+  color-scheme: light;
+
+  --color-bg-root: oklch(98% 0.008 260);
+  --color-bg-surface: oklch(95% 0.008 260);
+  --color-bg-raised: oklch(91% 0.008 260);
+  --color-bg-overlay: oklch(88% 0.01 260);
+
+  --color-text-primary: oklch(14% 0.015 260);
+  --color-text-secondary: oklch(38% 0.02 260);
+  --color-text-muted: oklch(58% 0.015 260);
+
+  --color-edge: oklch(80% 0.01 260);
+  --color-edge-strong: oklch(68% 0.012 260);
+
+  --shadow-card: 0 1px 3px oklch(0% 0 0 / 0.1), 0 1px 2px oklch(0% 0 0 / 0.08);
+  --shadow-raised: 0 4px 12px oklch(0% 0 0 / 0.12), 0 2px 4px oklch(0% 0 0 / 0.08);
+}
+
 /* ─── Base Styles ─── */
 @layer base {
   * {
@@ -98,6 +118,10 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
   }
 
   body {
