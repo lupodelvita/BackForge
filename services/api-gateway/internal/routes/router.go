@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"log"
+
+	"github.com/backforge/api-gateway/internal/config"
 	"github.com/backforge/api-gateway/internal/handlers"
 	"github.com/backforge/api-gateway/internal/middleware"
 	"github.com/go-chi/chi/v5"
@@ -9,7 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewRouter(jwtSecret string, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux {
+func NewRouter(cfg *config.Config, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Глобальные middleware
@@ -24,7 +27,24 @@ func NewRouter(jwtSecret string, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux
 	// Rate limiting: 100 запросов/мин на IP
 	r.Use(middleware.RateLimit(rdb, 100))
 
-	// Публичные маршруты
+	// ── Auth routes (public) ────────────────────────────────────────────────
+	var auth *handlers.AuthHandler
+	if pool != nil {
+		var err error
+		auth, err = handlers.NewAuthHandler(pool, rdb, cfg)
+		if err != nil {
+			log.Printf("warn: auth handler init failed: %v (auth API disabled)", err)
+		}
+	}
+	if auth != nil {
+		r.Post("/auth/register", auth.Register)
+		r.Post("/auth/login", auth.Login)
+		r.Get("/auth/platform/github", auth.PlatformGitHubStatus)
+		r.Get("/auth/github", auth.GitHubAuthorize)
+		r.Get("/auth/github/callback", auth.GitHubCallback)
+	}
+
+	// ── Public routes ────────────────────────────────────────────────────────
 	r.Get("/health", handlers.HealthCheck)
 
 	// Project state CRUD (no auth — builder uses these directly)
@@ -36,9 +56,17 @@ func NewRouter(jwtSecret string, rdb *redis.Client, pool *pgxpool.Pool) *chi.Mux
 	r.Get("/migrate/{name}/status", handlers.MigrateStatus(pool))
 	r.Post("/migrate/{name}/run", handlers.MigrateRun(pool))
 
-	// Защищённые маршруты (JWT обязателен)
+	// ── Protected routes (JWT required) ─────────────────────────────────────
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.JWTAuth(jwtSecret))
+		r.Use(middleware.JWTAuth(cfg.JWTSecret))
+
+		// Auth: current user + GitHub connect
+		if auth != nil {
+			r.Get("/auth/me", auth.GetMe)
+			r.Post("/auth/github/connect", auth.GitHubConnectInit)
+			r.Get("/auth/providers/github", auth.GetGitHubProviderConfig)
+			r.Put("/auth/providers/github", auth.UpsertGitHubProviderConfig)
+		}
 		// Динамические API routes из project_state.json — Phase 2.5
 
 		// Storage routes

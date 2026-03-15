@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// Router
-	r := routes.NewRouter(cfg.JWTSecret, rdb, pool)
+	r := routes.NewRouter(cfg, rdb, pool)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
