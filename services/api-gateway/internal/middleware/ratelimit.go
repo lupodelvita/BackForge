@@ -9,10 +9,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RateLimit ограничивает число запросов на IP (maxPerMinute в минуту)
+// RateLimit ограничивает число запросов на IP (maxPerMinute в минуту).
+// Если rdb == nil — rate limiting пропускается (Redis недоступен).
 func RateLimit(rdb *redis.Client, maxPerMinute int) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if rdb == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
 			ip := r.RemoteAddr
 			// Убрать порт из IP
 			for i := len(ip) - 1; i >= 0; i-- {

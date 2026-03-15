@@ -19,19 +19,25 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Подключение к Redis
+	// Подключение к Redis (опционально — без него rate limiting отключён)
+	var rdb *redis.Client
 	redisOpt, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("invalid REDIS_URL: %v", err)
+		log.Printf("warn: invalid REDIS_URL: %v (rate limiting disabled)", err)
+	} else {
+		client := redis.NewClient(redisOpt)
+		ctx0, cancel0 := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel0()
+		if pingErr := client.Ping(ctx0).Err(); pingErr != nil {
+			log.Printf("warn: redis connection failed: %v (rate limiting disabled)", pingErr)
+		} else {
+			rdb = client
+			log.Println("✓ Redis connected")
+		}
 	}
-	rdb := redis.NewClient(redisOpt)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("redis connection failed: %v", err)
-	}
-	log.Println("✓ Redis connected")
 
 	// Optional PostgreSQL connection (for migrations API)
 	var pool *pgxpool.Pool
