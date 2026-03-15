@@ -49,9 +49,6 @@ export function LandingPage() {
           </Link>
           <div className="flex items-center gap-3">
             <LanguageSwitcher variant="pill" />
-            <Link to="/app" className="rounded-lg border border-edge bg-bg-raised px-4 py-2 text-sm font-medium text-text-secondary hover:text-text-primary hover:border-edge-strong transition-colors">
-              {t('landing.nav.openApp')}
-            </Link>
             <Link to="/register" className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg-root hover:bg-accent/90 transition-colors">
               {t('landing.nav.getStarted')}
             </Link>
@@ -78,13 +75,14 @@ export function LandingPage() {
             {t('landing.hero.subtitle')}
           </p>
           <div className="mt-10 flex items-center justify-center gap-4 flex-wrap">
-            <Link to="/app" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
-              {t('landing.hero.tryFree')}
+            <Link to="/register" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all shadow-lg shadow-accent/20">
+              {t('landing.nav.getStarted')}
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link to="/register" className="rounded-xl border border-edge bg-bg-raised px-6 py-3 text-base font-medium text-text-secondary hover:text-text-primary hover:border-edge-strong transition-colors">
-              {t('landing.nav.getStarted')}
-            </Link>
+            <a href="https://github.com/lupodelvita/BackForge" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-edge bg-bg-raised px-6 py-3 text-base font-medium text-text-secondary hover:text-text-primary hover:border-edge-strong transition-colors">
+              <Github className="size-4" />
+              GitHub
+            </a>
           </div>
           <div className="mt-16 flex justify-center">
             <ChevronDown className="size-5 text-text-muted animate-bounce" />
@@ -208,12 +206,9 @@ export function LandingPage() {
           <h2 className="text-3xl sm:text-4xl font-display font-bold">{t('landing.cta.title')}</h2>
           <p className="mt-4 text-text-secondary">{t('landing.cta.subtitle')}</p>
           <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
-            <Link to="/app" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all">
-              {t('landing.hero.tryFree')}
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link to="/register" className="rounded-xl border border-edge bg-bg-raised px-6 py-3 text-base font-medium text-text-secondary hover:text-text-primary hover:border-edge-strong transition-colors">
+            <Link to="/register" className="group flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-base font-semibold text-bg-root hover:bg-accent/90 transition-all">
               {t('landing.nav.getStarted')}
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>

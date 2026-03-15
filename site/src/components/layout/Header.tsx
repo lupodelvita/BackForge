@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   Search,
   Bell,
@@ -11,6 +11,7 @@ import {
   Globe,
   Check,
   LogOut,
+  LogIn,
   User,
   ChevronDown,
 } from 'lucide-react'
@@ -159,6 +160,17 @@ export function Header() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Login link (when not authenticated) */}
+        {!user && (
+          <Link
+            to="/login"
+            className="flex h-8 items-center gap-1.5 rounded-[var(--radius-md)] px-2 text-text-secondary hover:text-text-primary hover:bg-bg-raised transition-colors ml-1"
+          >
+            <LogIn className="size-4" />
+            <span className="text-xs font-medium">Login</span>
+          </Link>
         )}
       </div>
     </header>
