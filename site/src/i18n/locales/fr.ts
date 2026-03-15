@@ -144,4 +144,32 @@ export const fr: Translations = {
     apiUrl: 'URL API', envVars: 'Variables d\'environnement', addEnvVar: 'Ajouter une variable', saveSettings: 'Enregistrer les paramètres',
     migrations: { title: 'Migrations', run: 'Exécuter les migrations', status: 'État des migrations', applied: 'Appliquées', pending: 'En attente', noMigrations: 'Aucune migration en attente' },
   },
+  landing: {
+    nav: { openApp: 'Ouvrir l\'App', getStarted: 'Commencer' },
+    hero: {
+      badge: 'Plateforme Backend-as-Code',
+      title1: 'Créez des backends',
+      title2: 'sans boilerplate',
+      subtitle: 'BackForge est une plateforme open-source pour concevoir des schémas visuellement, générer des REST API, déployer en un clic et tout surveiller en temps réel.',
+      tryFree: 'Essayer gratuitement',
+    },
+    features: {
+      title: 'Tout ce dont vous avez besoin',
+      subtitle: 'De la conception du schéma au déploiement en production — tout en une plateforme.',
+      builder: { title: 'Constructeur Visuel', desc: 'Designer drag-and-drop avec canvas en temps réel, relations entre tables et aperçu de code.' },
+      metrics: { title: 'Métriques en Temps Réel', desc: 'Surveillez chaque endpoint — requêtes, latence, erreurs et tendances de performance.' },
+      deploy: { title: 'Déploiement en Un Clic', desc: 'Déployez sur Docker, cloud ou edge en un clic. Rollbacks, health checks et CI/CD inclus.' },
+      security: { title: 'Sécurité par Défaut', desc: 'RBAC, clés API, protection SQL injection, rate limiting et journalisation d\'audit.' },
+      codegen: { title: 'Génération de Code', desc: 'Générez automatiquement des handlers Go, migrations SQL, fichiers router et documentation OpenAPI.' },
+      i18n: { title: 'Multi-Langue', desc: 'Localisation complète : anglais, russe, ukrainien, italien, espagnol, français — et plus encore.' },
+    },
+    howItWorks: { title: 'Comment ça marche', subtitle: 'Trois étapes de l\'idée à la production.' },
+    steps: {
+      design: { title: 'Concevez votre schéma', desc: 'Utilisez le constructeur visuel pour définir tables, champs, relations et endpoints API.' },
+      generate: { title: 'Générez et personnalisez', desc: 'BackForge génère des handlers Go, migrations SQL et une REST API complète. Modifiez tout.' },
+      deploy: { title: 'Déployez et surveillez', desc: 'Publiez sur Docker ou cloud en un clic. Surveillez les métriques live et faites un rollback instantané.' },
+    },
+    stack: { title: 'Construit avec' },
+    cta: { title: 'Prêt à construire plus vite ?', subtitle: 'Commencez à construire votre backend en minutes, pas en semaines.' },
+  },
 }

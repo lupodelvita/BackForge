@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -43,7 +44,7 @@ export function LoginPage() {
     try {
       const res = await authApi.login(email, password)
       setAuth(res.data.user, res.data.token)
-      navigate('/')
+      navigate('/app')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? ''
       if (msg.includes('invalid credentials')) {
@@ -67,7 +68,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-root p-4">
+    <div className="min-h-screen flex items-center justify-center bg-bg-root p-4 relative">
+      <LanguageSwitcher variant="pill" className="absolute top-4 right-4" />
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">

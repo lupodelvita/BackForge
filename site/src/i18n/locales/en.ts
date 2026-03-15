@@ -254,6 +254,45 @@ export const en = {
       alreadyLinked: 'This GitHub account is already linked to another user',
     },
   },
+  landing: {
+    nav: {
+      openApp: 'Open App',
+      getStarted: 'Get Started',
+    },
+    hero: {
+      badge: 'Backend-as-Code Platform',
+      title1: 'Build backends',
+      title2: 'without the boilerplate',
+      subtitle: 'BackForge is an open-source platform that lets you visually design schemas, auto-generate REST APIs, deploy with one click, and monitor everything in real time.',
+      tryFree: 'Try for free',
+    },
+    features: {
+      title: 'Everything you need',
+      subtitle: 'From schema design to production deployment — all in one platform.',
+      builder: { title: 'Visual Builder', desc: 'Drag-and-drop schema designer with real-time canvas, table relationships, and instant code preview.' },
+      metrics: { title: 'Real-Time Metrics', desc: 'Monitor every endpoint — requests, latency, errors, and performance trends in real time.' },
+      deploy: { title: 'One-Click Deploy', desc: 'Deploy to Docker, cloud or edge with a single click. Rollbacks, health checks, and CI/CD built in.' },
+      security: { title: 'Security by Default', desc: 'RBAC, API keys, SQL injection protection, rate limiting, and audit logging out of the box.' },
+      codegen: { title: 'Code Generation', desc: 'Auto-generate Go handlers, SQL migrations, router files, and OpenAPI docs from your schema.' },
+      i18n: { title: 'Multi-Language', desc: 'Full interface localization: English, Russian, Ukrainian, Italian, Spanish, French — and growing.' },
+    },
+    howItWorks: {
+      title: 'How it works',
+      subtitle: 'Three steps from idea to production.',
+    },
+    steps: {
+      design: { title: 'Design your schema', desc: 'Use the visual builder to define tables, fields, relations, and API endpoints — no code required.' },
+      generate: { title: 'Generate & customize', desc: 'BackForge generates Go handlers, SQL migrations, and a full REST API. Tweak anything you need.' },
+      deploy: { title: 'Deploy & monitor', desc: 'Ship to Docker or cloud in one click. Watch live metrics, catch errors, and roll back instantly.' },
+    },
+    stack: {
+      title: 'Built with',
+    },
+    cta: {
+      title: 'Ready to build faster?',
+      subtitle: 'Start building your backend in minutes, not weeks.',
+    },
+  },
 }
 
 export type Translations = typeof en

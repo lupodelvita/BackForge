@@ -13,21 +13,31 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
 
 export function Sidebar() {
   const { t } = useTranslation()
   const { sidebarCollapsed, toggleSidebar, currentProject, projectNames, setCurrentProject } =
     useAppStore()
+  const { isAuthenticated } = useAuthStore()
   const location = useLocation()
   const navigate = useNavigate()
 
   const mainNav = [
-    { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
-    { to: '/builder', icon: Blocks, label: t('nav.builder') },
-    { to: '/metrics', icon: Activity, label: t('nav.metrics') },
-    { to: '/deploy', icon: Rocket, label: t('nav.deploy') },
-    { to: '/settings', icon: Settings, label: t('nav.settings') },
+    { to: '/app', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/app/builder', icon: Blocks, label: t('nav.builder') },
+    { to: '/app/metrics', icon: Activity, label: t('nav.metrics') },
+    { to: '/app/deploy', icon: Rocket, label: t('nav.deploy') },
+    { to: '/app/settings', icon: Settings, label: t('nav.settings') },
   ]
+
+  function guardedNavigate(path: string) {
+    if (isAuthenticated) {
+      navigate(path)
+    } else {
+      navigate('/register')
+    }
+  }
 
   return (
     <aside
@@ -125,21 +135,21 @@ export function Sidebar() {
       <div className="flex flex-col gap-1 border-t border-edge p-2">
         {!sidebarCollapsed ? (
           <>
-            <button onClick={() => navigate('/builder')} className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 text-sm text-accent hover:bg-accent/10 transition-all cursor-pointer">
+            <button onClick={() => guardedNavigate('/app/builder')} className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 text-sm text-accent hover:bg-accent/10 transition-all cursor-pointer">
               <Sparkles className="size-4" />
               AI Ассистент
             </button>
-            <button onClick={() => navigate('/builder')} className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 text-sm text-ember hover:bg-ember/10 transition-all cursor-pointer">
+            <button onClick={() => guardedNavigate('/app/builder')} className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-3 py-2 text-sm text-ember hover:bg-ember/10 transition-all cursor-pointer">
               <FolderPlus className="size-4" />
               Новый проект
             </button>
           </>
         ) : (
           <>
-            <button onClick={() => navigate('/builder')} className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-accent hover:bg-accent/10 transition-all cursor-pointer mx-auto">
+            <button onClick={() => guardedNavigate('/app/builder')} className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-accent hover:bg-accent/10 transition-all cursor-pointer mx-auto">
               <Sparkles className="size-4" />
             </button>
-            <button onClick={() => navigate('/builder')} className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-ember hover:bg-ember/10 transition-all cursor-pointer mx-auto">
+            <button onClick={() => guardedNavigate('/app/builder')} className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-ember hover:bg-ember/10 transition-all cursor-pointer mx-auto">
               <FolderPlus className="size-4" />
             </button>
           </>

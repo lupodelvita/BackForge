@@ -38,7 +38,7 @@ export function GithubCallbackPage() {
       authApi.me()
         .then((res) => {
           setAuth(res.data, token)
-          navigate('/', { replace: true })
+          navigate('/app', { replace: true })
         })
         .catch(() => {
           // Token is invalid / expired — go to login
