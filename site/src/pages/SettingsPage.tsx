@@ -22,7 +22,6 @@ import {
   UserCircle,
   CheckCircle2,
   XCircle,
-  ShieldHalf,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -632,148 +631,11 @@ function AccountPanel() {
   )
 }
 
-/* ─── Admin Panel (platform admin only) ─── */
-
-function AdminPanel() {
-  const { t } = useTranslation()
-  const qc = useQueryClient()
-  const [clientId, setClientId] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
-  const [callbackUrl, setCallbackUrl] = useState('')
-
-  const configQuery = useQuery({
-    queryKey: ['admin-platform-config'],
-    queryFn: () => authApi.getAdminPlatformConfig().then((r) => r.data),
-    staleTime: 30_000,
-  })
-
-  useEffect(() => {
-    if (!configQuery.data) return
-    setClientId(configQuery.data.github_client_id ?? '')
-    setCallbackUrl(configQuery.data.github_callback_url ?? '')
-    setClientSecret('')
-  }, [configQuery.data])
-
-  const saveMutation = useMutation({
-    mutationFn: () =>
-      authApi.saveAdminPlatformConfig({
-        github_client_id: clientId,
-        github_client_secret: clientSecret,
-        github_callback_url: callbackUrl,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-platform-config'] })
-      qc.invalidateQueries({ queryKey: ['platform-github-status'] })
-    },
-  })
-
-  const configured = configQuery.data?.configured_via_env
-    ? true
-    : configQuery.data?.has_secret && !!configQuery.data.github_client_id
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Github className="size-4" />
-            {t('admin.platformGithub.title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border border-edge bg-bg-raised/50 p-4 space-y-2">
-            <p className="text-sm text-text-primary font-medium">{t('admin.platformGithub.description')}</p>
-            <p className="text-xs text-text-muted">{t('admin.platformGithub.hint')}</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge variant={configured ? 'success' : 'muted'}>
-                {configured
-                  ? t('admin.platformGithub.statusConfigured')
-                  : t('admin.platformGithub.statusNotConfigured')}
-              </Badge>
-              {configQuery.data?.configured_via_env && (
-                <Badge variant="info">{t('admin.platformGithub.viaEnv')}</Badge>
-              )}
-            </div>
-          </div>
-
-          {configQuery.data?.configured_via_env ? (
-            <div className="rounded-lg border border-info/30 bg-info/5 px-4 py-3">
-              <p className="text-xs text-info">{t('admin.platformGithub.envOverride')}</p>
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-text-secondary">{t('admin.platformGithub.clientId')}</label>
-                  <Input
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder="Iv1.abc123..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-text-secondary">{t('admin.platformGithub.callbackUrl')}</label>
-                  <Input
-                    value={callbackUrl}
-                    onChange={(e) => setCallbackUrl(e.target.value)}
-                    placeholder="https://your-backforge.com/auth/github/callback"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-text-secondary">{t('admin.platformGithub.clientSecret')}</label>
-                <Input
-                  type="password"
-                  value={clientSecret}
-                  onChange={(e) => setClientSecret(e.target.value)}
-                  placeholder={
-                    configQuery.data?.has_secret
-                      ? t('admin.platformGithub.secretRotate')
-                      : 'gho_...'
-                  }
-                />
-                <p className="text-xs text-text-muted">{t('admin.platformGithub.secretHint')}</p>
-              </div>
-
-              {saveMutation.isError && (
-                <p className="text-xs text-danger">{t('admin.platformGithub.saveError')}</p>
-              )}
-              {saveMutation.isSuccess && (
-                <p className="text-xs text-success">{t('admin.platformGithub.saveSuccess')}</p>
-              )}
-
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={
-                  saveMutation.isPending ||
-                  !clientId ||
-                  !callbackUrl ||
-                  (!clientSecret && !configQuery.data?.has_secret)
-                }
-              >
-                {saveMutation.isPending ? (
-                  <RefreshCw className="size-3.5 animate-spin" />
-                ) : (
-                  <Save className="size-3.5" />
-                )}
-                {t('admin.platformGithub.save')}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
 /* ─── Page ─── */
 
 export function SettingsPage() {
   const { t } = useTranslation()
-  const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState('general')
-
-  const isAdmin = user?.role === 'admin'
 
   const tabs = [
     { id: 'general', label: t('settings.general'), icon: Sliders },
@@ -782,7 +644,6 @@ export function SettingsPage() {
     { id: 'integrations', label: t('settings.integrations'), icon: Plug },
     { id: 'cicd', label: t('settings.cicd'), icon: GitBranch },
     { id: 'security', label: t('settings.security'), icon: Shield },
-    ...(isAdmin ? [{ id: 'admin', label: t('admin.tab'), icon: ShieldHalf }] : []),
   ]
 
   const panels: Record<string, React.ReactNode> = {
@@ -792,7 +653,6 @@ export function SettingsPage() {
     integrations: <IntegrationsPanel />,
     cicd: <CICDPanel />,
     security: <SecurityPanel />,
-    admin: <AdminPanel />,
   }
 
   return (

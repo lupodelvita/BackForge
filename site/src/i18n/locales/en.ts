@@ -254,26 +254,6 @@ export const en = {
       alreadyLinked: 'This GitHub account is already linked to another user',
     },
   },
-  admin: {
-    tab: 'Admin',
-    platformGithub: {
-      title: 'Platform GitHub OAuth',
-      description: 'Configure GitHub OAuth for BackForge sign-in',
-      hint: 'This enables the "Sign in with GitHub" button for all users. Create a GitHub OAuth App at github.com/settings/developers.',
-      statusConfigured: 'Configured',
-      statusNotConfigured: 'Not configured',
-      viaEnv: 'Set via environment variable',
-      envOverride: 'GitHub OAuth credentials are set via environment variables and cannot be changed here. Remove PLATFORM_GITHUB_CLIENT_ID from your .env to manage them through this panel.',
-      clientId: 'Client ID',
-      clientSecret: 'Client Secret',
-      callbackUrl: 'Callback URL',
-      secretRotate: 'Secret already saved. Enter a new one to rotate it.',
-      secretHint: 'Encrypted at rest. Never exposed after saving.',
-      save: 'Save Configuration',
-      saveSuccess: 'Platform GitHub OAuth saved. Users can now sign in with GitHub.',
-      saveError: 'Failed to save configuration.',
-    },
-  },
 }
 
 export type Translations = typeof en

@@ -12,7 +12,6 @@ export interface User {
   github_email?: string
   has_password: boolean
   has_github: boolean
-  role: string
 }
 
 export interface AuthResponse {
@@ -37,13 +36,6 @@ export interface GitHubProviderConfig {
   callback_url?: string
   has_secret: boolean
   platform_configured: boolean
-}
-
-export interface PlatformAdminConfig {
-  github_client_id?: string
-  github_callback_url?: string
-  has_secret: boolean
-  configured_via_env: boolean
 }
 
 // ── Schema ───────────────────────────────────────────────────────────────────

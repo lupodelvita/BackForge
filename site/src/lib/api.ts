@@ -8,7 +8,6 @@ import type {
   GitHubOAuthMode,
   PlatformOAuthStatus,
   GitHubProviderConfig,
-  PlatformAdminConfig,
   ProjectState,
   DeploymentRecord,
   DeployTarget,
@@ -82,17 +81,6 @@ export const authApi = {
     client_secret: string
     callback_url: string
   }) => gateway.put<GitHubProviderConfig>('/auth/providers/github', payload),
-
-  /** Admin only: get platform-level GitHub OAuth config (in-app configuration). */
-  getAdminPlatformConfig: () =>
-    gateway.get<PlatformAdminConfig>('/admin/platform/config'),
-
-  /** Admin only: create or update platform GitHub OAuth credentials. */
-  saveAdminPlatformConfig: (payload: {
-    github_client_id: string
-    github_client_secret: string
-    github_callback_url: string
-  }) => gateway.put<PlatformAdminConfig>('/admin/platform/config', payload),
 
   /** Builds the GitHub authorize URL for login or register flows. */
   githubUrl: (mode: GitHubOAuthMode) =>
