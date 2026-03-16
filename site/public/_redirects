@@ -1,2 +1,10 @@
-# SPA fallback — all routes serve index.html
+# Cloudflare Pages proxies these server-to-server to Railway — no CORS needed
+/proxy/gateway/*  https://backforge.up.railway.app/:splat  200
+/proxy/analyzer/* https://backforge.up.railway.app/:splat  200
+/proxy/deploy/*   https://backforge.up.railway.app/:splat  200
+/proxy/sync/*     https://backforge.up.railway.app/:splat  200
+/proxy/codegen/*  https://backforge.up.railway.app/:splat  200
+/proxy/metrics/*  https://backforge.up.railway.app/:splat  200
+
+# SPA fallback
 /*  /index.html  200

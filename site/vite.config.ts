@@ -12,5 +12,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    proxy: {
+      '/proxy/gateway': { target: 'http://localhost:8080', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/gateway/, '') },
+      '/proxy/analyzer': { target: 'http://localhost:8081', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/analyzer/, '') },
+      '/proxy/deploy':   { target: 'http://localhost:8082', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/deploy/, '') },
+      '/proxy/sync':     { target: 'http://localhost:8083', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/sync/, '') },
+      '/proxy/codegen':  { target: 'http://localhost:8084', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/codegen/, '') },
+      '/proxy/metrics':  { target: 'http://localhost:8085', changeOrigin: true, rewrite: (p) => p.replace(/^\/proxy\/metrics/, '') },
+    },
   },
 })

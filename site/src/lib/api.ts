@@ -23,13 +23,14 @@ import type {
   AnalyzeResponse,
 } from './types'
 
-// Production URLs — all services on Railway
-const GATEWAY_URL = 'https://backforge.up.railway.app'
-const ANALYZER_URL = 'https://backforge.up.railway.app'
-const DEPLOY_URL = 'https://backforge.up.railway.app'
-const SYNC_URL = 'https://backforge.up.railway.app'
-const CODEGEN_URL = 'https://backforge.up.railway.app'
-const METRICS_URL = 'https://backforge.up.railway.app'
+// Base URLs — proxied through Cloudflare Pages _redirects in production,
+// and through Vite dev server proxy locally (see vite.config.ts)
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || '/proxy/gateway'
+const ANALYZER_URL = import.meta.env.VITE_ANALYZER_URL || '/proxy/analyzer'
+const DEPLOY_URL = import.meta.env.VITE_DEPLOY_URL || '/proxy/deploy'
+const SYNC_URL = import.meta.env.VITE_SYNC_URL || '/proxy/sync'
+const CODEGEN_URL = import.meta.env.VITE_CODEGEN_URL || '/proxy/codegen'
+const METRICS_URL = import.meta.env.VITE_METRICS_URL || '/proxy/metrics'
 
 function makeClient(baseURL: string): AxiosInstance {
   const client = axios.create({
